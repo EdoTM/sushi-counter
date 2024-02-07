@@ -111,6 +111,116 @@ class ApplicationTest {
         }
     }
 
+    @Test
+    fun newOrderOverwritesOldOne() = testApplication {
+        setupTestApp()
+        val client = getHttpClient()
+        client.setupTestRoom()
+        client.webSocket("/order") {
+            incoming.receive()
+            send("order:Tea/2")
+            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
+            send("order:Tea/3")
+            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
+        }
+        client.get("/orders").apply {
+            assertEquals(mapOf("Tea" to 3), body<Map<String, Int>>())
+        }
+    }
+
+    @Test
+    fun ifCloseConnection_ShouldRemoveSession() = testApplication {
+        setupTestApp()
+        val client = getHttpClient()
+        client.setupTestRoom()
+        client.webSocket("/order") {
+            incoming.receive()
+            send("close")
+        }
+        client.get("/orders").apply {
+            assertEquals("{}", body<String>())
+        }
+    }
+
+    @Test
+    fun ifRoomIsCreated_OtherUsersCanJoin() = testApplication {
+        setupTestApp()
+        val client1 = getHttpClient()
+        val client2 = getHttpClient()
+        client1.setupTestRoom()
+        client2.post("/room/join") { setBody(testRoomName) }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+    }
+
+    @Test
+    fun joinedUsersCanPlaceOrders() = testApplication {
+        setupTestApp()
+        val client1 = getHttpClient()
+        val client2 = getHttpClient()
+        client1.setupTestRoom()
+        client2.post("/room/join") { setBody(testRoomName) }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+        client2.webSocket("/order") {
+            incoming.receive()
+            send("order:Coffee/1")
+            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
+        }
+        client2.get("/orders").apply {
+            assertEquals(mapOf("Coffee" to 1), body<Map<String, Int>>())
+        }
+    }
+
+    @Test
+    fun getTotalOrders() = testApplication {
+        setupTestApp()
+        val client1 = getHttpClient()
+        val client2 = getHttpClient()
+        client1.setupTestRoom()
+        client2.post("/room/join") { setBody(testRoomName) }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+        client1.webSocket("/order") {
+            incoming.receive()
+            send("order:Tea/2")
+            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
+        }
+        client2.webSocket("/order") {
+            incoming.receive()
+            send("order:Coffee/1")
+            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
+        }
+        client2.get("/room/total").apply {
+            assertEquals(mapOf("Tea" to 2, "Coffee" to 1), body<Map<String, Int>>())
+        }
+    }
+
+    @Test
+    fun getTotalOrdersGiveAggregatedOrders() = testApplication {
+        setupTestApp()
+        val client1 = getHttpClient()
+        val client2 = getHttpClient()
+        client1.setupTestRoom()
+        client2.post("/room/join") { setBody(testRoomName) }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+        client1.webSocket("/order") {
+            incoming.receive()
+            send("order:Coffee/2")
+            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
+        }
+        client2.webSocket("/order") {
+            incoming.receive()
+            send("order:Coffee/1")
+            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
+        }
+        client2.get("/room/total").apply {
+            assertEquals(mapOf("Coffee" to 3), body<Map<String, Int>>())
+        }
+    }
+}
+
 private fun ApplicationTestBuilder.getHttpClient(): HttpClient {
     return createClient {
         install(HttpCookies)
