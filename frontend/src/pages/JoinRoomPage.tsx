@@ -10,6 +10,7 @@ function JoinRoomPage() {
         className={"form-control"}
         value={roomCode}
         placeholder={"Enter Room Code"}
+        maxLength={20}
         onInput={(e) => setRoomCode(e.currentTarget.value)}
       />
 
