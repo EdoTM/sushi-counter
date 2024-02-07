@@ -7,12 +7,14 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import net.edotm.plugins.configureRouting
 import net.edotm.plugins.configureSessions
 import net.edotm.plugins.configureWebSockets
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class ApplicationTest {
     @BeforeTest
@@ -66,6 +68,18 @@ class ApplicationTest {
         setupTestApp()
         client.delete("/room").apply {
             assertEquals(HttpStatusCode.NotFound, status)
+        }
+    }
+
+    @Test(expected = ClosedReceiveChannelException::class)
+    fun ifConnectToNonExistentRoom_ShouldClose() = testApplication {
+        setupTestApp()
+        val client = createClient {
+            install(HttpCookies)
+            install(WebSockets)
+        }
+        client.webSocket("/order") {
+            incoming.receive() as Frame.Close
         }
     }
 
