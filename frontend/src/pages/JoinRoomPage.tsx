@@ -1,17 +1,17 @@
 import { useState } from "react";
 
 function JoinRoomPage() {
-  const [roomCode, setRoomCode] = useState<string>();
+  const [roomName, setRoomName] = useState<string>();
 
   return (
     <div className={"container-fluid pt-5"}>
       <input
         type="text"
         className={"form-control"}
-        value={roomCode}
-        placeholder={"Enter Room Code"}
+        value={roomName}
+        placeholder={"Enter Room Name"}
         maxLength={20}
-        onInput={(e) => setRoomCode(e.currentTarget.value)}
+        onInput={(e) => setRoomName(e.currentTarget.value)}
       />
 
       <div className={"container-md d-flex flex-column flex-md-row justify-content-center mt-3"}>
