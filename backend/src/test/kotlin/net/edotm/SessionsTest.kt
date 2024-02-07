@@ -12,6 +12,13 @@ class SessionsTest {
         assertTrue { Sessions.hasSession(sessionId) }
     }
 
+    @Test
+    fun ifSessionIsCreated_thenCanGetIt() {
+        val sessionId = Sessions.newSession()
+        val session = Sessions.get(sessionId)
+        assertTrue { session.sessionId == sessionId }
+    }
+
     @Test(expected = Sessions.SessionNotFoundException::class)
     fun ifSessionExpires_thenItIsRemoved() {
         val sessionId = Sessions.newSession()
