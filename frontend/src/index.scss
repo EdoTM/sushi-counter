@@ -1,0 +1,34 @@
+$primary: #6610F2FF;
+
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+
+// merge with existing $theme-colors map
+$theme-colors: map-merge($theme-colors, (
+        "primary": $primary,
+));
+
+// set changes
+@import "bootstrap";
+
+@import "bootstrap/scss/utilities";
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.center-window {
+  display: flex;
+  margin-left: auto;
+  margin-right: auto;
+  justify-content: center;
+  align-items: center;
+  width: clamp(0px, 100%, 500px);
+}
