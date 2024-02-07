@@ -6,7 +6,7 @@ class UserData(
     val orders: MutableSet<Order> = mutableSetOf(),
     var expiration: Long = System.currentTimeMillis() + 3600 * 3
 ) {
-    fun leaveRoom() {
+    fun clearRoomAndOrders() {
         room = null
         orders.clear()
     }
