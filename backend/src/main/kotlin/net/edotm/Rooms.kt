@@ -1,25 +1,34 @@
 package net.edotm
 
-object Rooms {
-    private val rooms: HashMap<String, Room> = hashMapOf()
+import java.util.concurrent.ConcurrentHashMap
 
-    fun createRoom(code: String) {
-        if (rooms.containsKey(code)) {
+object Rooms {
+    private val rooms: ConcurrentHashMap<String, Room> = ConcurrentHashMap()
+
+    fun createRoom(name: String): Room {
+        if (rooms.containsKey(name)) {
             throw RoomExistsException()
         }
-        rooms[code] = Room(code)
+        val room = Room(name)
+        rooms[name] = room
+        return room
     }
 
-    fun remove(code: String) {
-        rooms.remove(code) ?: throw RoomNotFoundException()
+    fun createRoom(name: String, sessions: Iterable<UserData>) {
+        createRoom(name)
+        rooms[name]!!.sessions.addAll(sessions)
     }
 
-    fun get(code: String): Room {
-        return rooms[code] ?: throw RoomNotFoundException()
+    fun remove(name: String) {
+        rooms.remove(name) ?: throw RoomNotFoundException()
     }
 
-    fun hasRoom(code: String): Boolean {
-        return rooms.containsKey(code)
+    fun get(name: String): Room {
+        return rooms[name] ?: throw RoomNotFoundException()
+    }
+
+    fun hasRoom(name: String): Boolean {
+        return rooms.containsKey(name)
     }
 
     fun clear() {
