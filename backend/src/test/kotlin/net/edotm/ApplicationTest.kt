@@ -81,4 +81,22 @@ class ApplicationTest {
             assertEquals(HttpStatusCode.NotFound, status)
         }
     }
+
+    @Test
+    fun ifConnectToRoom_ThenReturnConnected() = testApplication {
+        setupTestApp()
+        val client = createClient {
+            install(HttpCookies)
+            install(WebSockets)
+        }
+        client.put("/room") {
+            setBody("Flying Elephant")
+        }.apply {
+            assertEquals(HttpStatusCode.Created, status)
+        }
+        client.webSocket("/order") {
+            val frame = incoming.receive() as Frame.Text
+            assertEquals("Connected to Flying Elephant", frame.readText())
+        }
+    }
 }
