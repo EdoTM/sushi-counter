@@ -1,7 +1,8 @@
 import { useState } from "react";
+import {createRoom, joinRoom} from "../api.ts";
 
 function JoinRoomPage() {
-  const [roomName, setRoomName] = useState<string>();
+  const [roomName, setRoomName] = useState<string>("");
 
   return (
     <div className={"container-fluid pt-5"}>
@@ -14,25 +15,28 @@ function JoinRoomPage() {
         onInput={(e) => setRoomName(e.currentTarget.value)}
       />
 
-      <div className={"container-md d-flex flex-column flex-md-row justify-content-center mt-3"}>
-        <button
-          className={
-            "btn btn-primary"
+      <div
+        className={
+          "d-flex flex-column flex-sm-row justify-content-center mt-3"
+        }
+      >
+        <button className={"btn btn-primary"} onClick={async () => {
+          const res = await createRoom(roomName);
+          if (res.status === 200) {
+            const joinRes = await joinRoom(roomName);
+            if (joinRes.status === 200) {
+              window.location.href = `/room`;
+            } else {
+              alert("Error joining room");
+              return;
+            }
+          } else if (res.status !== 201) {
+            alert("Error creating room");
+            return;
           }
-          onClick={() => {
-          }}
-        >
-          Join
-        </button>
-        <span className={"mx-auto my-2"}>or</span>
-        <button
-          className={
-            "btn btn-secondary"
-          }
-          onClick={() => {
-          }}
-        >
-          Create
+          window.location.href = `/room/${roomName}`;
+        }}>
+          Create or join
         </button>
       </div>
     </div>
