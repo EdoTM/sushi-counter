@@ -27,10 +27,6 @@ object Rooms {
         return rooms[name] ?: throw RoomNotFoundException()
     }
 
-    fun hasRoom(name: String): Boolean {
-        return rooms.containsKey(name)
-    }
-
     fun clear() {
         rooms.clear()
     }
