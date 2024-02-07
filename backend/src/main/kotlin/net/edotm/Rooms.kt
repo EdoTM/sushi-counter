@@ -9,7 +9,7 @@ object Rooms {
         if (rooms.containsKey(name)) {
             throw RoomExistsException()
         }
-        val room = Room(name)
+        val room = Room()
         rooms[name] = room
         return room
     }
