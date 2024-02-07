@@ -67,8 +67,23 @@ fun Application.configureRouting() {
             }
             try {
                 Rooms.remove(userData.room!!)
-                userData.leaveRoom()
+                userData.clearRoomAndOrders()
                 call.respond(HttpStatusCode.OK)
+            } catch (e: Rooms.RoomNotFoundException) {
+                call.respond(HttpStatusCode.NotFound)
+            }
+        }
+
+        get("/room/total") {
+            val userData = call.getSession()
+            val room = userData.room
+            if (room == null) {
+                call.respond(HttpStatusCode.NotFound)
+                return@get
+            }
+            try {
+                val orders = Rooms.get(room).aggregateAndGetOrders()
+                call.respond(orders)
             } catch (e: Rooms.RoomNotFoundException) {
                 call.respond(HttpStatusCode.NotFound)
             }
@@ -89,7 +104,6 @@ private fun placeOrder(order: String, userData: UserData) {
     } else {
         userData.orders.add(newOrder)
     }
-
 }
 
 private fun ApplicationCall.getSession(): UserData {
@@ -100,4 +114,9 @@ private fun ApplicationCall.getSession(): UserData {
     val newSessionId = Sessions.newSession()
     sessions.set(UserSession(newSessionId))
     return Sessions.get(newSessionId)
+}
+
+private fun addToRoom(user: UserData, room: String) {
+    user.room = room
+    Rooms.get(room).users.add(user)
 }
