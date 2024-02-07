@@ -19,7 +19,10 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+const val testRoomName = "Flying Elephant"
+
 class ApplicationTest {
+
     @BeforeTest
     fun setup() {
         Rooms.clear()
@@ -29,7 +32,7 @@ class ApplicationTest {
     fun createRoom() = testApplication {
         setupTestApp()
         client.put("/room") {
-            setBody("Flying Elephant")
+            setBody(testRoomName)
         }.apply {
             assertEquals(HttpStatusCode.Created, status)
         }
@@ -39,12 +42,12 @@ class ApplicationTest {
     fun createRoomTwice() = testApplication {
         setupTestApp()
         client.put("/room") {
-            setBody("Flying Elephant")
+            setBody(testRoomName)
         }.apply {
             assertEquals(HttpStatusCode.Created, status)
         }
         client.put("/room") {
-            setBody("Flying Elephant")
+            setBody(testRoomName)
         }.apply {
             assertEquals(HttpStatusCode.OK, status)
         }
@@ -53,11 +56,9 @@ class ApplicationTest {
     @Test
     fun deleteExistingRoom() = testApplication {
         setupTestApp()
-        val client = createClient {
-            install(HttpCookies)
-        }
+        val client = getHttpClient()
         client.put("/room") {
-            setBody("Flying Elephant")
+            setBody(testRoomName)
         }.apply {
             assertEquals(HttpStatusCode.Created, status)
         }
@@ -77,10 +78,7 @@ class ApplicationTest {
     @Test(expected = ClosedReceiveChannelException::class)
     fun ifConnectToNonExistentRoom_ShouldClose() = testApplication {
         setupTestApp()
-        val client = createClient {
-            install(HttpCookies)
-            install(WebSockets)
-        }
+        val client = getHttpClient()
         client.webSocket("/order") {
             incoming.receive() as Frame.Close
         }
@@ -89,27 +87,18 @@ class ApplicationTest {
     @Test
     fun ifConnectToRoom_ThenReturnConnected() = testApplication {
         setupTestApp()
-        val client = createClient {
-            install(HttpCookies)
-            install(WebSockets)
-        }
+        val client = getHttpClient()
         client.setupTestRoom()
         client.webSocket("/order") {
             val frame = incoming.receive() as Frame.Text
-            assertEquals("Connected to Flying Elephant", frame.readText())
+            assertEquals("Connected to $testRoomName", frame.readText())
         }
     }
 
     @Test
     fun addOrder() = testApplication {
         setupTestApp()
-        val client = createClient {
-            install(HttpCookies)
-            install(WebSockets)
-            install(ContentNegotiation) {
-                json()
-            }
-        }
+        val client = getHttpClient()
         client.setupTestRoom()
         client.webSocket("/order") {
             incoming.receive()
@@ -120,6 +109,13 @@ class ApplicationTest {
             println(body<String>())
             assertEquals(mapOf("Tea" to 2), body<Map<String, Int>>())
         }
+    }
+
+private fun ApplicationTestBuilder.getHttpClient(): HttpClient {
+    return createClient {
+        install(HttpCookies)
+        install(WebSockets)
+        install(ContentNegotiation) { json() }
     }
 }
 
@@ -133,5 +129,5 @@ private fun ApplicationTestBuilder.setupTestApp() {
 }
 
 private suspend fun HttpClient.setupTestRoom() {
-    put("/room") { setBody("Flying Elephant") }
+    put("/room") { setBody(testRoomName) }
 }
