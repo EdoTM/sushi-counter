@@ -1,20 +1,23 @@
 package net.edotm
 
 import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.cookies.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import net.edotm.plugins.configureContentNegotiation
 import net.edotm.plugins.configureRouting
 import net.edotm.plugins.configureSessions
 import net.edotm.plugins.configureWebSockets
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 
 class ApplicationTest {
     @BeforeTest
@@ -96,10 +99,33 @@ class ApplicationTest {
             assertEquals("Connected to Flying Elephant", frame.readText())
         }
     }
+
+    @Test
+    fun addOrder() = testApplication {
+        setupTestApp()
+        val client = createClient {
+            install(HttpCookies)
+            install(WebSockets)
+            install(ContentNegotiation) {
+                json()
+            }
+        }
+        client.setupTestRoom()
+        client.webSocket("/order") {
+            incoming.receive()
+            send("order:Tea/2")
+            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
+        }
+        client.get("/orders").apply {
+            println(body<String>())
+            assertEquals(mapOf("Tea" to 2), body<Map<String, Int>>())
+        }
+    }
 }
 
 private fun ApplicationTestBuilder.setupTestApp() {
     application {
+        configureContentNegotiation()
         configureWebSockets()
         configureRouting()
         configureSessions()

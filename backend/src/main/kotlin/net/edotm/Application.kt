@@ -3,10 +3,10 @@ package net.edotm
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import net.edotm.plugins.configureHTTP
-import net.edotm.plugins.configureRouting
-import net.edotm.plugins.configureSessions
-import net.edotm.plugins.configureWebSockets
+import net.edotm.plugins.*
+import java.util.*
+
+val sessionInvalidationTimer = Timer()
 
 fun main() {
     embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
@@ -14,8 +14,15 @@ fun main() {
 }
 
 fun Application.module() {
+    configureContentNegotiation()
     configureWebSockets()
     configureSessions()
     configureHTTP()
     configureRouting()
+
+    sessionInvalidationTimer.scheduleAtFixedRate(object : TimerTask() {
+        override fun run() {
+            Sessions.invalidateExpiredSessions()
+        }
+    }, 0, 3600000)
 }
