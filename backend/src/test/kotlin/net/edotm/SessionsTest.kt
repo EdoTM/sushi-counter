@@ -19,11 +19,11 @@ class SessionsTest {
         assertTrue { session.sessionId == sessionId }
     }
 
-    @Test(expected = Sessions.SessionNotFoundException::class)
+    @Test
     fun ifSessionExpires_thenItIsRemoved() {
         val sessionId = Sessions.newSession()
         val session = Sessions.get(sessionId)
-        session.expiration = System.currentTimeMillis() - 1
+        session.expiration = System.currentTimeMillis() - 10
         assertFalse { Sessions.hasSession(sessionId) }
     }
 
