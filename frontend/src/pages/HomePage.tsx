@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {createRoom, joinRoom} from "../api.ts";
 
-function JoinRoomPage() {
+function HomePage() {
   const [roomName, setRoomName] = useState<string>("");
 
   return (
@@ -43,4 +43,4 @@ function JoinRoomPage() {
   );
 }
 
-export default JoinRoomPage;
+export default HomePage;

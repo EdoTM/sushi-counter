@@ -1,11 +1,11 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import JoinRoomPage from "./pages/JoinRoomPage.tsx";
+import HomePage from "./pages/HomePage.tsx";
 
 export function App() {
   const router = createBrowserRouter([
     {
       path: "/",
-      element: <JoinRoomPage />,
+      element: <HomePage />,
     },
   ]);
 
