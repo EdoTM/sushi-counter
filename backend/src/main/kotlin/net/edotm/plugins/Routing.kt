@@ -59,6 +59,17 @@ fun Application.configureRouting() {
             }
         }
 
+        post("/room/join") {
+            val userData = call.getSession()
+            val room = call.receiveText()
+            try {
+                addToRoom(userData, room)
+                call.respond(HttpStatusCode.OK)
+            } catch (e: Rooms.RoomNotFoundException) {
+                call.respond(HttpStatusCode.NotFound)
+            }
+        }
+
         delete("/room") {
             val userData = call.getSession()
             if (userData.room == null) {
