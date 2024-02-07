@@ -1,5 +1,3 @@
 package net.edotm
 
-data class UserSession(
-    val room: String? = null,
-)
+class UserSession(val id: String)

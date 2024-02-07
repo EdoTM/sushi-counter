@@ -8,23 +8,17 @@ import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import net.edotm.Order
 import net.edotm.Rooms
+import net.edotm.Sessions
+import net.edotm.UserData
 import net.edotm.UserSession
 
 fun Application.configureRouting() {
-    fun getSession(call: ApplicationCall): UserSession {
-        val session = call.sessions.get<UserSession>()
-        if (session != null) {
-            return session
-        }
-        val newSession = UserSession()
-        call.sessions.set(newSession)
-        return newSession
-    }
 
     routing {
         webSocket("/order") {
-            val session = getSession(call)
+            val session = call.getSession()
             val room = session.room
             if (room == null) {
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No room"))
@@ -33,19 +27,32 @@ fun Application.configureRouting() {
             send("Connected to $room")
             for (frame in incoming) {
                 frame as? Frame.Text ?: continue
-                when (val command = frame.readText()) {
-                    "close" -> close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
-                    else -> send("Server: Unknown command $command")
+                val command = frame.readText()
+                when {
+                    command.startsWith("order:") -> {
+                        placeOrder(command.removePrefix("order:"), session)
+                        send("OK")
+                    }
+
+                    command == "close" -> {
+                        Sessions.removeSession(session.sessionId)
+                        close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
+                    }
                 }
             }
         }
 
+        get("/orders") {
+            val userData = call.getSession()
+            call.respond(userData.orders.associate { it.name to it.quantity })
+        }
+
         put("/room") {
-            val session = getSession(call)
+            val userData = call.getSession()
             val room = call.receiveText()
             try {
-                Rooms.createRoom(room)
-                call.sessions.set(session.copy(room = room))
+                userData.room = room
+                Rooms.createRoom(room, listOf(userData))
                 call.respond(HttpStatusCode.Created)
             } catch (e: Rooms.RoomExistsException) {
                 call.respond(HttpStatusCode.OK)
@@ -53,18 +60,44 @@ fun Application.configureRouting() {
         }
 
         delete("/room") {
-            val session = getSession(call)
-            if (session.room == null) {
+            val userData = call.getSession()
+            if (userData.room == null) {
                 call.respond(HttpStatusCode.NotFound)
                 return@delete
             }
             try {
-                Rooms.remove(session.room)
-                call.sessions.set(session.copy(room = null))
+                Rooms.remove(userData.room!!)
+                userData.leaveRoom()
                 call.respond(HttpStatusCode.OK)
             } catch (e: Rooms.RoomNotFoundException) {
                 call.respond(HttpStatusCode.NotFound)
             }
         }
     }
+}
+
+private fun placeOrder(order: String, userData: UserData) {
+    val tokens = order.split("/")
+    if (tokens.size != 2) {
+        throw IllegalArgumentException("Order should be in format '<item>x<qty>'")
+    }
+    val (item, quantity) = tokens
+    val qty = quantity.toIntOrNull() ?: throw IllegalArgumentException("Quantity should be a number")
+    val newOrder = Order(item, qty)
+    if (qty == 0) {
+        userData.orders.remove(newOrder)
+    } else {
+        userData.orders.add(newOrder)
+    }
+
+}
+
+private fun ApplicationCall.getSession(): UserData {
+    val session = sessions.get<UserSession>()
+    if (Sessions.hasSession(session?.id)) {
+        return Sessions.get(session!!.id)
+    }
+    val newSessionId = Sessions.newSession()
+    sessions.set(UserSession(newSessionId))
+    return Sessions.get(newSessionId)
 }

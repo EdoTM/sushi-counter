@@ -1,5 +1,3 @@
 package net.edotm
 
-class Room(val code: String) {
-    private val users = mutableSetOf<UserSession>()
-}
+class Room(val name: String, val sessions: MutableSet<UserData> = mutableSetOf())
