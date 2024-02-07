@@ -20,19 +20,6 @@ class ApplicationTest {
         Rooms.clear()
     }
 
-    private fun ApplicationTestBuilder.setupTestApp() {
-        application {
-            configureWebSockets()
-            configureRouting()
-            configureSessions()
-        }
-    }
-
-    private suspend fun ApplicationTestBuilder.setupTestRoom(client: HttpClient) {
-        setupTestApp()
-        client.put("/room") { setBody("Flying Elephant") }
-    }
-
     @Test
     fun createRoom() = testApplication {
         setupTestApp()
@@ -89,14 +76,22 @@ class ApplicationTest {
             install(HttpCookies)
             install(WebSockets)
         }
-        client.put("/room") {
-            setBody("Flying Elephant")
-        }.apply {
-            assertEquals(HttpStatusCode.Created, status)
-        }
+        client.setupTestRoom()
         client.webSocket("/order") {
             val frame = incoming.receive() as Frame.Text
             assertEquals("Connected to Flying Elephant", frame.readText())
         }
     }
+}
+
+private fun ApplicationTestBuilder.setupTestApp() {
+    application {
+        configureWebSockets()
+        configureRouting()
+        configureSessions()
+    }
+}
+
+private suspend fun HttpClient.setupTestRoom() {
+    put("/room") { setBody("Flying Elephant") }
 }
