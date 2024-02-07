@@ -6,6 +6,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
+import io.ktor.server.websocket.*
+import io.ktor.websocket.*
 import net.edotm.Rooms
 import net.edotm.UserSession
 
@@ -21,6 +23,23 @@ fun Application.configureRouting() {
     }
 
     routing {
+        webSocket("/order") {
+            val session = getSession(call)
+            val room = session.room
+            if (room == null) {
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No room"))
+                return@webSocket
+            }
+            send("Connected to $room")
+            for (frame in incoming) {
+                frame as? Frame.Text ?: continue
+                when (val command = frame.readText()) {
+                    "close" -> close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
+                    else -> send("Server: Unknown command $command")
+                }
+            }
+        }
+
         put("/room") {
             val session = getSession(call)
             val room = call.receiveText()
