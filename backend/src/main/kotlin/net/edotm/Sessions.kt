@@ -19,7 +19,7 @@ object Sessions {
 
     fun get(sessionId: String): UserData {
         val session = sessions[sessionId] ?: throw SessionNotFoundException()
-        if (session.sessionExpiration < System.currentTimeMillis()) {
+        if (session.expiration < System.currentTimeMillis()) {
             removeSession(sessionId)
             throw SessionNotFoundException()
         }
@@ -27,12 +27,18 @@ object Sessions {
     }
 
     fun hasSession(sessionId: String?): Boolean {
-        return sessions.containsKey(sessionId)
+        if (sessionId == null) return false
+        val session = sessions[sessionId] ?: return false
+        if (session.expiration < System.currentTimeMillis()) {
+            removeSession(sessionId)
+            return false
+        }
+        return true
     }
 
     fun invalidateExpiredSessions() {
         val now = System.currentTimeMillis()
-        sessions.entries.removeIf { it.value.sessionExpiration < now }
+        sessions.entries.removeIf { it.value.expiration < now }
     }
 
     class SessionNotFoundException : NoSuchElementException("Session not found")
