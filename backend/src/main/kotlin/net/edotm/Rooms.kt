@@ -16,7 +16,7 @@ object Rooms {
 
     fun createRoom(name: String, sessions: Iterable<UserData>) {
         createRoom(name)
-        rooms[name]!!.sessions.addAll(sessions)
+        rooms[name]!!.users.addAll(sessions)
     }
 
     fun remove(name: String) {
