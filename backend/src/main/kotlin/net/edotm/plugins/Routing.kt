@@ -15,11 +15,16 @@ import net.edotm.UserData
 import net.edotm.UserSession
 
 fun Application.configureRouting() {
-
     routing {
         webSocket("/order") {
-            val session = call.getSession()
-            val room = session.room
+            val userData: UserData
+            try {
+                userData = call.getSession()
+            } catch (e: IllegalStateException) {
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No session present"))
+                return@webSocket
+            }
+            val room = userData.room
             if (room == null) {
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No room"))
                 return@webSocket
@@ -31,11 +36,12 @@ fun Application.configureRouting() {
                 when {
                     command.startsWith("order:") -> {
                         placeOrder(command.removePrefix("order:"), session)
+                        placeOrder(command.removePrefix("order:"), userData)
                         send("OK")
                     }
 
                     command == "close" -> {
-                        Sessions.removeSession(session.sessionId)
+                        Sessions.removeSession(userData.sessionId)
                         close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
                     }
                 }
@@ -43,12 +49,12 @@ fun Application.configureRouting() {
         }
 
         get("/orders") {
-            val userData = call.getSession()
+            val userData = call.getOrCreateSession()
             call.respond(userData.orders.associate { it.name to it.quantity })
         }
 
         put("/room") {
-            val userData = call.getSession()
+            val userData = call.getOrCreateSession()
             val room = call.receiveText()
             try {
                 userData.room = room
@@ -60,7 +66,7 @@ fun Application.configureRouting() {
         }
 
         post("/room/join") {
-            val userData = call.getSession()
+            val userData = call.getOrCreateSession()
             val room = call.receiveText()
             try {
                 addToRoom(userData, room)
@@ -71,7 +77,7 @@ fun Application.configureRouting() {
         }
 
         delete("/room") {
-            val userData = call.getSession()
+            val userData = call.getOrCreateSession()
             if (userData.room == null) {
                 call.respond(HttpStatusCode.NotFound)
                 return@delete
@@ -86,7 +92,7 @@ fun Application.configureRouting() {
         }
 
         get("/room/total") {
-            val userData = call.getSession()
+            val userData = call.getOrCreateSession()
             val room = userData.room
             if (room == null) {
                 call.respond(HttpStatusCode.NotFound)
@@ -109,22 +115,26 @@ private fun placeOrder(order: String, userData: UserData) {
     }
     val (item, quantity) = tokens
     val qty = quantity.toIntOrNull() ?: throw IllegalArgumentException("Quantity should be a number")
-    val newOrder = Order(item, qty)
-    if (qty == 0) {
-        userData.orders.remove(newOrder)
-    } else {
-        userData.orders.add(newOrder)
-    }
+    userData.addOrder(Order(item, qty))
 }
 
 private fun ApplicationCall.getSession(): UserData {
     val session = sessions.get<UserSession>()
     if (Sessions.hasSession(session?.id)) {
         return Sessions.get(session!!.id)
+    } else {
+        throw IllegalStateException("No session")
     }
-    val newSessionId = Sessions.newSession()
-    sessions.set(UserSession(newSessionId))
-    return Sessions.get(newSessionId)
+}
+
+private fun ApplicationCall.getOrCreateSession(): UserData {
+    try {
+        return getSession()
+    } catch (e: IllegalStateException) {
+        val newSessionId = Sessions.newSession()
+        sessions.set(UserSession(newSessionId))
+        return Sessions.get(newSessionId)
+    }
 }
 
 private fun addToRoom(user: UserData, room: String) {
