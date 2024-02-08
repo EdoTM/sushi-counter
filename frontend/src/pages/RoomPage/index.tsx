@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import ReviewOrdersView from "./ReviewOrdersView.tsx";
 import RoomTotalsView from "./RoomTotalsView.tsx";
 import MakeOrdersView from "./MakeOrdersView.tsx";
+import DisconnectedAlert from "../../components/DisconnectedAlert.tsx";
 
 function getInitialItems(max: number): string[] {
   const items = [];
@@ -102,20 +103,7 @@ function RoomPage() {
       <div className={"container-fluid position-relative py-3"}>
         <h1>{pageTitle[page]}</h1>
         {loading ? <p>Loading...</p> : pageView()}
-        {disconnected && (
-          <div className={"position-fixed d-flex top-0 w-100"}>
-            <div
-              className={
-                "alert alert-danger mx-auto mt-3 d-flex align-items-center gap-2"
-              }
-            >
-              <BsExclamationTriangleFill /> Disconnected from room.{" "}
-              <Link className={"link-light"} to={"/"}>
-                Exit
-              </Link>
-            </div>
-          </div>
-        )}
+        {disconnected && <DisconnectedAlert />}
       </div>
     </>
   );
