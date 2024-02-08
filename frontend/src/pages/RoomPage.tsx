@@ -34,9 +34,12 @@ function RoomPage() {
             setCounts={setCounts}
           />
         )}
-        <div className={"position-fixed bottom-0 end-0 d-flex"}>
+        <div className={"position-fixed bottom-0 end-0 d-flex btn-group"}>
+          {review && <button className={"btn btn-primary mb-3"}>See room total</button>}
           <button
-            className={"btn ms-auto mb-3 me-3 btn-" + (review ? "secondary" : "primary")}
+            className={
+              "btn ms-auto mb-3 me-3 btn-" + (review ? "secondary" : "primary")
+            }
             onClick={() => setReview((r) => !r)}
           >
             {review ? "Go back" : "Review"}
