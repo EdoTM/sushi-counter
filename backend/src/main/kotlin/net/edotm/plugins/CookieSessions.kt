@@ -8,6 +8,7 @@ fun Application.configureSessions() {
     install(Sessions) {
         cookie<UserSession>("USER_SESSION", SessionStorageMemory()) {
             cookie.maxAgeInSeconds = 3600 * 3
+            cookie.extensions["SameSite"] = "lax"
         }
     }
 }
