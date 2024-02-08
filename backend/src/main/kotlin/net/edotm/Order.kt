@@ -14,9 +14,6 @@ data class Order(
 
         other as Order
 
-        if (name != other.name) return false
-        if (quantity != other.quantity) return false
-
-        return true
+        return name == other.name
     }
 }
