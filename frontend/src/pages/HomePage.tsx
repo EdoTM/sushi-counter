@@ -34,7 +34,7 @@ function HomePage() {
             alert("Error creating room");
             return;
           }
-          window.location.href = `/room/${roomName}`;
+          window.location.href = `/room`;
         }}>
           Create or join
         </button>
