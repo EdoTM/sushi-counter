@@ -101,8 +101,8 @@ function RoomPage() {
       <div className={"container-fluid position-relative py-3"}>
         <h1>{pageTitle[page]}</h1>
         {loading ? <p>Loading...</p> : pageView()}
-        {disconnected && <DisconnectedAlert />}
       </div>
+      {disconnected && <DisconnectedAlert />}
     </>
   );
 }
