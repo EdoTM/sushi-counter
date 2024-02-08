@@ -134,7 +134,6 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.retrieveRoomFromReque
     try {
         return normalize(call.receiveText())
     } catch (e: Exception) {
-        call.respond(HttpStatusCode.BadRequest)
         throw BadRequestException("Invalid room name")
     }
 }
@@ -151,7 +150,7 @@ private fun ApplicationCall.getSession(): UserData {
 private fun ApplicationCall.getOrCreateSession(): UserData {
     try {
         return getSession()
-    } catch (e: IllegalStateException) {
+    } catch (e: BadRequestException) {
         val newSessionId = Sessions.newSession()
         sessions.set(UserSession(newSessionId))
         return Sessions.get(newSessionId)
