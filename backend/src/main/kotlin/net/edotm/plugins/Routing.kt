@@ -2,12 +2,14 @@ package net.edotm.plugins
 
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import io.ktor.server.websocket.*
 import io.ktor.util.logging.*
+import io.ktor.util.pipeline.*
 import io.ktor.websocket.*
 import net.edotm.Order
 import net.edotm.Rooms
@@ -27,7 +29,7 @@ fun Application.configureRouting() {
             val userData: UserData
             try {
                 userData = call.getSession()
-            } catch (e: IllegalStateException) {
+            } catch (e: BadRequestException) {
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No session present"))
                 return@webSocket
             }
@@ -57,19 +59,13 @@ fun Application.configureRouting() {
         }
 
         get("/orders") {
-            val userData: UserData
-            try {
-                userData = call.getSession()
-            } catch (e: IllegalStateException) {
-                call.respond(HttpStatusCode.NotFound)
-                return@get
-            }
+            val userData = call.getSession()
             call.respond(userData.orders.associate { it.name to it.quantity })
         }
 
         put("/room") {
+            val room = retrieveRoomFromRequest()
             val userData = call.getOrCreateSession()
-            val room = call.receiveText()
             try {
                 userData.room = room
                 Rooms.createRoom(room, listOf(userData))
@@ -81,8 +77,8 @@ fun Application.configureRouting() {
         }
 
         post("/room/join") {
+            val room = retrieveRoomFromRequest()
             val userData = call.getOrCreateSession()
-            val room = call.receiveText()
             try {
                 addToRoom(userData, room)
                 logger.info("User joined room $room")
@@ -108,13 +104,7 @@ fun Application.configureRouting() {
         }
 
         get("/room/total") {
-            val userData: UserData
-            try {
-                userData = call.getSession()
-            } catch (e: IllegalStateException) {
-                call.respond(HttpStatusCode.NotFound)
-                return@get
-            }
+            val userData = call.getSession()
             val room = userData.room
             if (room == null) {
                 call.respond(HttpStatusCode.NotFound)
@@ -140,12 +130,21 @@ private fun placeOrder(order: String, userData: UserData) {
     userData.addOrder(Order(item, qty))
 }
 
+private suspend fun PipelineContext<Unit, ApplicationCall>.retrieveRoomFromRequest(): String {
+    try {
+        return normalize(call.receiveText())
+    } catch (e: Exception) {
+        call.respond(HttpStatusCode.BadRequest)
+        throw BadRequestException("Invalid room name")
+    }
+}
+
 private fun ApplicationCall.getSession(): UserData {
     val session = sessions.get<UserSession>()
     if (Sessions.hasSession(session?.id)) {
         return Sessions.get(session!!.id)
     } else {
-        throw IllegalStateException("No session")
+        throw BadRequestException("No session")
     }
 }
 
@@ -162,4 +161,8 @@ private fun ApplicationCall.getOrCreateSession(): UserData {
 private fun addToRoom(user: UserData, room: String) {
     user.room = room
     Rooms.get(room).users.add(user)
+}
+
+private fun normalize(s: String): String {
+    return s.trim().replace(" ", "").lowercase()
 }
