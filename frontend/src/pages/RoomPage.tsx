@@ -1,8 +1,13 @@
 import { BsExclamationTriangleFill } from "react-icons/bs";
 import { useEffect, useMemo, useState } from "react";
-import { connectToRoomWebSocket, getOrders } from "../api.ts";
+import {
+  connectToRoomWebSocket,
+  getOrders,
+  getRoomTotalOrders,
+} from "../api.ts";
 import { Link } from "react-router-dom";
 import VirtualCartItemList from "../components/VirtualCartItemList.tsx";
+import VirtualReviewItemList from "../components/VirtualReviewItemList.tsx";
 
 function getInitialItems(max: number): string[] {
   const items = [];
@@ -19,6 +24,8 @@ function RoomPage() {
   const [ws, setWs] = useState<WebSocket>();
   const [disconnected, setDisconnected] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [reviewRoomTotal, setReviewRoomTotal] = useState<boolean>(false);
+  const [roomCounts, setRoomCounts] = useState<Map<string, number>>(new Map());
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => counts.get(item) ?? 0 > 0);
@@ -60,34 +67,67 @@ function RoomPage() {
     }
   };
 
+  const getRoomTotal = () => {
+    getRoomTotalOrders().then((res) => {
+      const newRoomCounts = new Map<string, number>();
+      for (const [item, count] of Object.entries(res.data)) {
+        newRoomCounts.set(item, count);
+      }
+      setRoomCounts(newRoomCounts);
+    });
+  };
+
+  const itemsList = () => {
+    if (loading) {
+      return (
+        <div className={"d-flex"}>
+          <div className={"mx-auto spinner spinner-border mt-5"} />
+        </div>
+      );
+    } else if (review && filteredItems.length === 0) {
+      return (
+        <div className={"alert alert-info"} role="alert">
+          You have not ordered anything yet.
+        </div>
+      );
+    } else if (reviewRoomTotal) {
+      const totalFilteredItems = items.filter((item) => roomCounts.get(item) ?? 0 > 0);
+      return <VirtualReviewItemList items={totalFilteredItems} counts={roomCounts} />;
+    }
+    return (
+      <VirtualCartItemList
+        items={review ? filteredItems : items}
+        counts={counts}
+        onCountChange={handleCountChange}
+      />
+    );
+  };
+
   return (
     <>
       <div className={"container-fluid position-relative py-3"}>
         <h1>{review ? "Order review" : "Room"}</h1>
-        {loading ? (
-          <div className={"d-flex"}>
-            <div className={"mx-auto spinner spinner-border mt-5"} />
-          </div>
-        ) : review && filteredItems.length === 0 ? (
-          <div className={"alert alert-info"} role="alert">
-            You have not ordered anything yet.
-          </div>
-        ) : (
-          <VirtualCartItemList
-            items={review ? filteredItems : items}
-            counts={counts}
-            onCountChange={handleCountChange}
-          />
-        )}
+        {itemsList()}
         <div className={"position-fixed bottom-0 end-0 d-flex btn-group"}>
-          {review && (
-            <button className={"btn btn-primary mb-3"}>See room total</button>
+          {review && !reviewRoomTotal && (
+            <button
+              className={"btn btn-primary mb-3"}
+              onClick={() => {
+                getRoomTotal();
+                setReviewRoomTotal(true);
+              }}
+            >
+              See room total
+            </button>
           )}
           <button
             className={
               "btn ms-auto mb-3 me-3 btn-" + (review ? "secondary" : "primary")
             }
-            onClick={() => setReview((r) => !r)}
+            onClick={() => {
+              setReview((r) => !r)
+              setReviewRoomTotal(false);
+            }}
           >
             {review ? "Go back" : "Review"}
           </button>
