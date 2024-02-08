@@ -1,7 +1,5 @@
-import { BsExclamationTriangleFill } from "react-icons/bs";
 import { useEffect, useState } from "react";
 import { connectToRoomWebSocket, getOrders } from "../../api.ts";
-import { Link } from "react-router-dom";
 import ReviewOrdersView from "./ReviewOrdersView.tsx";
 import RoomTotalsView from "./RoomTotalsView.tsx";
 import MakeOrdersView from "./MakeOrdersView.tsx";
@@ -21,7 +19,7 @@ const pageTitle = {
   make: "Make Orders",
   review: "Review Orders",
   roomTotals: "Room Totals",
-}
+};
 
 function RoomPage() {
   const [items, _] = useState<string[]>(getInitialItems(300));
