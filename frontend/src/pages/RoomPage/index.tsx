@@ -22,19 +22,32 @@ const pageTitle = {
 };
 
 function RoomPage() {
-  const [items, _] = useState<string[]>(getInitialItems(300));
+  const [items, _setItems] = useState<string[]>(getInitialItems(300));
   const [counts, setCounts] = useState<Map<string, number>>(new Map());
   const [ws, setWs] = useState<WebSocket>();
   const [disconnected, setDisconnected] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState<Page>("make");
 
+  const addCustomItems = (customItems: string[]) => {
+    _setItems([...items, ...customItems].sort(
+      (a, b) => a.localeCompare(b, undefined, { numeric: true })
+    ));
+  }
+
   useEffect(() => {
     setLoading(true);
     getOrders().then((res) => {
       const newCounts = new Map<string, number>();
+      const customItems: string[] = [];
       for (const [item, count] of Object.entries(res.data)) {
         newCounts.set(item, count);
+        if (!items.includes(item)) {
+          customItems.push(item);
+        }
+      }
+      if (customItems.length > 0) {
+        addCustomItems(customItems);
       }
       setCounts(newCounts);
       setLoading(false);
@@ -91,6 +104,13 @@ function RoomPage() {
             counts={counts}
             items={items}
             onReviewClick={() => setPage("review")}
+            onAddItem={(i) => {
+              const item = i.replace(" ", "").toUpperCase()
+              if (items.includes(item)) {
+                return;
+              }
+              addCustomItems([item]);
+            }}
           />
         );
     }
