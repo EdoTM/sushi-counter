@@ -19,6 +19,10 @@ val logger = KtorSimpleLogger("Routing")
 
 fun Application.configureRouting() {
     routing {
+        get("/") {
+            call.respondText("Hello, world!\n")
+        }
+
         webSocket("/order") {
             val userData: UserData
             try {
