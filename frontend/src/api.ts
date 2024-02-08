@@ -1,6 +1,8 @@
 import axiosInstance from "./axiosInstance.ts";
 import {AxiosResponse} from "axios";
 
+const WS_URL = "ws://" + import.meta.env.VITE_API_BASE_URL.split("//")[1];
+
 export function joinRoom(roomName: string) {
   return axiosInstance.post(`/room/join`, roomName);
 }
@@ -10,7 +12,7 @@ export function createRoom(roomName: string) {
 }
 
 export function connectToRoomWebSocket() {
-  return new WebSocket(`ws://localhost:8080/order`);
+  return new WebSocket(`${WS_URL}/order`);
 }
 
 type OrderMap = {
@@ -21,6 +23,6 @@ export function getOrders(): Promise<AxiosResponse<OrderMap>> {
   return axiosInstance.get(`/orders`);
 }
 
-export function getRoomTotalOrders() {
-
+export function getRoomTotalOrders(): Promise<AxiosResponse<OrderMap>> {
+  return axiosInstance.get(`/room/total`);
 }
