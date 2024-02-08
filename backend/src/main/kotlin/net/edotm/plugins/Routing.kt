@@ -7,12 +7,15 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import io.ktor.server.websocket.*
+import io.ktor.util.logging.*
 import io.ktor.websocket.*
 import net.edotm.Order
 import net.edotm.Rooms
 import net.edotm.Sessions
 import net.edotm.UserData
 import net.edotm.UserSession
+
+val logger = KtorSimpleLogger("Routing")
 
 fun Application.configureRouting() {
     routing {
@@ -35,8 +38,8 @@ fun Application.configureRouting() {
                 val command = frame.readText()
                 when {
                     command.startsWith("order:") -> {
-                        placeOrder(command.removePrefix("order:"), session)
                         placeOrder(command.removePrefix("order:"), userData)
+                        logger.info("Order placed by ${userData.sessionId}. Total orders: ${userData.orders}")
                         send("OK")
                     }
 
@@ -59,6 +62,7 @@ fun Application.configureRouting() {
             try {
                 userData.room = room
                 Rooms.createRoom(room, listOf(userData))
+                logger.info("Room $room created")
                 call.respond(HttpStatusCode.Created)
             } catch (e: Rooms.RoomExistsException) {
                 call.respond(HttpStatusCode.OK)
@@ -70,6 +74,7 @@ fun Application.configureRouting() {
             val room = call.receiveText()
             try {
                 addToRoom(userData, room)
+                logger.info("User joined room $room")
                 call.respond(HttpStatusCode.OK)
             } catch (e: Rooms.RoomNotFoundException) {
                 call.respond(HttpStatusCode.NotFound)
