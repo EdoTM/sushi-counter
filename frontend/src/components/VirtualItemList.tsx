@@ -8,13 +8,14 @@ type VirtualItemListProps = {
     index: number,
     style: React.CSSProperties,
   ) => OneOrMore<React.ReactNode>;
+  estimateSize: number;
 };
 
-function VirtualItemList({ items, renderItem }: VirtualItemListProps) {
+function VirtualItemList({ items, renderItem, estimateSize }: VirtualItemListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const virtualizer = useWindowVirtualizer({
     count: items.length,
-    estimateSize: () => 48,
+    estimateSize: () => estimateSize,
     overscan: 20,
     scrollMargin: listRef.current?.offsetTop ?? 0,
   });

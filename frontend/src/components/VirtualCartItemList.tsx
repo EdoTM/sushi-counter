@@ -29,6 +29,7 @@ function VirtualCartItemList({
           style={style}
         />
       )}
+      estimateSize={48}
     />
   );
 }
