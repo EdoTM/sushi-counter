@@ -57,7 +57,13 @@ fun Application.configureRouting() {
         }
 
         get("/orders") {
-            val userData = call.getSession()
+            val userData: UserData
+            try {
+                userData = call.getSession()
+            } catch (e: IllegalStateException) {
+                call.respond(HttpStatusCode.NotFound)
+                return@get
+            }
             call.respond(userData.orders.associate { it.name to it.quantity })
         }
 
@@ -102,7 +108,13 @@ fun Application.configureRouting() {
         }
 
         get("/room/total") {
-            val userData = call.getSession()
+            val userData: UserData
+            try {
+                userData = call.getSession()
+            } catch (e: IllegalStateException) {
+                call.respond(HttpStatusCode.NotFound)
+                return@get
+            }
             val room = userData.room
             if (room == null) {
                 call.respond(HttpStatusCode.NotFound)
