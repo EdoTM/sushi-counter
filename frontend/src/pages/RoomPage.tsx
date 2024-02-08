@@ -1,6 +1,8 @@
-import { BsDash, BsPlus } from "react-icons/bs";
-import React, { useMemo, useRef, useState } from "react";
+import { BsDash, BsExclamationTriangleFill, BsPlus } from "react-icons/bs";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import { connectToRoomWebSocket, getOrders } from "../api.ts";
+import { Link } from "react-router-dom";
 
 function getInitialItems(max: number): string[] {
   const items = [];
@@ -14,28 +16,73 @@ function RoomPage() {
   const [items, setItems] = useState<string[]>(getInitialItems(200));
   const [counts, setCounts] = useState<Map<string, number>>(new Map());
   const [review, setReview] = useState<boolean>(false);
+  const [ws, setWs] = useState<WebSocket>();
+  const [disconnected, setDisconnected] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => counts.get(item) ?? 0 > 0);
   }, [items, counts]);
 
+  useEffect(() => {
+    setLoading(true);
+    getOrders().then((res) => {
+      const newCounts = new Map<string, number>();
+      for (const [item, count] of Object.entries(res.data)) {
+        newCounts.set(item, count);
+      }
+      setCounts(newCounts);
+      setLoading(false);
+    });
+    const ws = connectToRoomWebSocket();
+    ws.onclose = (e) => {
+      console.log("Socket closed", e);
+      setDisconnected(true);
+    };
+    ws.onerror = (e) => {
+      console.log("Socket error", e);
+      setDisconnected(true);
+    };
+    setWs(ws);
+  }, []);
+
+  const handleCountChange = (item: string, count: number) => {
+    if (ws?.readyState === WebSocket.OPEN) {
+      const newCounts = new Map(counts);
+      if (count === 0) {
+        newCounts.delete(item);
+      } else {
+        newCounts.set(item, count);
+      }
+      console.log(`Sending - order:${item}/${count}`);
+      ws.send(`order:${item}/${count}`);
+      setCounts(newCounts);
+    }
+  };
+
   return (
     <>
       <div className={"container-fluid position-relative py-3"}>
         <h1>{review ? "Order review" : "Room"}</h1>
-        {review && filteredItems.length === 0 ? (
+        {loading ? (
+          <div className={"d-flex"}>
+            <div className={"mx-auto spinner spinner-border mt-5"} />
+          </div>
+        ) : review && filteredItems.length === 0 ? (
           <div className={"alert alert-info"} role="alert">
             You have not ordered anything yet.
           </div>
         ) : (
-          <VirtualizedList
+          <VirtualizedItemList
             items={review ? filteredItems : items}
             counts={counts}
-            setCounts={setCounts}
+            onCountChange={handleCountChange}
           />
         )}
         <div className={"position-fixed bottom-0 end-0 d-flex btn-group"}>
-          {review && <button className={"btn btn-primary mb-3"}>See room total</button>}
+          {review && (
+            <button className={"btn btn-primary mb-3"}>See room total</button>
+          )}
           <button
             className={
               "btn ms-auto mb-3 me-3 btn-" + (review ? "secondary" : "primary")
@@ -46,6 +93,20 @@ function RoomPage() {
           </button>
         </div>
       </div>
+      {disconnected && (
+        <div className={"position-fixed d-flex top-0 w-100"}>
+          <div
+            className={
+              "alert alert-danger mx-auto mt-3 d-flex align-items-center gap-2"
+            }
+          >
+            <BsExclamationTriangleFill /> Disconnected from room.{" "}
+            <Link className={"link-light"} to={"/"}>
+              Exit
+            </Link>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -53,15 +114,19 @@ function RoomPage() {
 type VirtualizedListProps = {
   items: string[];
   counts: Map<string, number>;
-  setCounts: (newCounts: Map<string, number>) => void;
+  onCountChange: (item: string, count: number) => void;
 };
 
-function VirtualizedList({ items, counts, setCounts }: VirtualizedListProps) {
+function VirtualizedItemList({
+  items,
+  counts,
+  onCountChange,
+}: VirtualizedListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const virtualizer = useWindowVirtualizer({
     count: items.length,
     estimateSize: () => 48,
-    overscan: 50,
+    overscan: 20,
     scrollMargin: listRef.current?.offsetTop ?? 0,
   });
 
@@ -84,18 +149,10 @@ function VirtualizedList({ items, counts, setCounts }: VirtualizedListProps) {
               name={item}
               count={counts.get(item) ?? 0}
               onIncrement={() => {
-                setCounts((old) => {
-                  const newCounts = new Map(old);
-                  newCounts.set(item, (old.get(item) ?? 0) + 1);
-                  return newCounts;
-                });
+                onCountChange(item, (counts.get(item) ?? 0) + 1);
               }}
               onDecrement={() => {
-                setCounts((old) => {
-                  const newCounts = new Map(old);
-                  newCounts.set(item, Math.max((old.get(item) ?? 0) - 1, 0));
-                  return newCounts;
-                });
+                onCountChange(item, counts.get(item)! - 1);
               }}
               style={{
                 top: 0,
