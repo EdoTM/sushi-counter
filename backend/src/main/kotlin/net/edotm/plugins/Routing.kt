@@ -49,6 +49,7 @@ fun Application.configureRouting() {
 
                     command == "close" -> {
                         Sessions.removeSession(userData.sessionId)
+                        userData.clearRoomAndOrders()
                         close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
                     }
                 }
@@ -56,7 +57,7 @@ fun Application.configureRouting() {
         }
 
         get("/orders") {
-            val userData = call.getOrCreateSession()
+            val userData = call.getSession()
             call.respond(userData.orders.associate { it.name to it.quantity })
         }
 
@@ -101,7 +102,7 @@ fun Application.configureRouting() {
         }
 
         get("/room/total") {
-            val userData = call.getOrCreateSession()
+            val userData = call.getSession()
             val room = userData.room
             if (room == null) {
                 call.respond(HttpStatusCode.NotFound)
