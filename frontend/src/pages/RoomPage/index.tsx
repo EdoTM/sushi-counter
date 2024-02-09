@@ -95,6 +95,7 @@ function RoomPage() {
           <RoomTotalsView
             allItems={items}
             onGoBackClick={() => setPage("review")}
+            addNewItems={addCustomItems}
           />
         );
       default:
