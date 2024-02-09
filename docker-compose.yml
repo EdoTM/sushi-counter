@@ -16,7 +16,9 @@ services:
     image: amazoncorretto:21-alpine
     volumes:
       - "./backend:/app"
-      - "./backend-cache:/root/.gradle/"
+      - "./gradle-cache/cache:/root/.gradle/"
+      - "./gradle-cache/build:/app/build"
+      - "./gradle-cache/.gradle:/app/.gradle"
     working_dir: /app
     command: ./gradlew run
     environment:
