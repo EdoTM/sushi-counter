@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  frontend:
+    image: node:alpine
+    volumes:
+      - "./frontend:/app"
+    working_dir: /app
+    command: npm run dev-host
+    networks:
+      - nginx
+    environment:
+      VITE_API_BASE_URL: http://localhost/api
+
+  backend:
+    image: amazoncorretto:21-alpine
+    volumes:
+      - "./backend:/app"
+      - "./backend-cache:/root/.gradle/"
+    working_dir: /app
+    command: ./gradlew run
+    environment:
+      SECRET_SIGN_KEY: $SC_SSK
+    healthcheck:
+      test: wget http://localhost:8080/ -O - || exit 1
+      timeout: 5s
+      retries: 20
+      interval: 5s
+    networks:
+      - nginx
+
+  nginx:
+    image: nginx
+    volumes:
+      - "./default.conf:/etc/nginx/conf.d/default.conf"
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - nginx
+networks:
+  nginx:
