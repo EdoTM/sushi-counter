@@ -119,7 +119,7 @@ function RoomPage() {
 
   return (
     <>
-      <div className={"container-fluid position-relative py-3"}>
+      <div className={"container-fluid position-relative py-3 pb-5"}>
         <h1 className={"text-center"}>{pageTitle[page]}</h1>
         {loading ? <p>Loading...</p> : pageView()}
       </div>
