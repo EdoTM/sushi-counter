@@ -30,12 +30,6 @@ function MakeOrdersView({
           placeholder={"Custom item"}
         />
         <button
-          className={"btn btn-secondary"}
-          onClick={() => setEditCustomItem(false)}
-        >
-          Cancel
-        </button>
-        <button
           className={"btn btn-primary"}
           onClick={() => onAddItem(customItem)}
         >
