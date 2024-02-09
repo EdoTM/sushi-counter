@@ -1,0 +1,49 @@
+stages:
+  - test
+  - build
+  - deploy
+
+test-backend:
+  tags: ["docker"]
+  image: amazoncorretto:21-alpine
+  stage: test
+  script:
+    - ./backend/gradlew test
+
+build-backend:
+  tags: ["docker"]
+  image: amazoncorretto:21-alpine
+  stage: build
+  script:
+    - ./backend/gradlew build
+    - mv backend/build/libs/backend-all.jar /cache/backend.jar
+
+build-frontend:
+  tags: ["docker"]
+  image: node:alpine
+  stage: build
+  script:
+    - cd frontend
+    - npm install
+    - npm run build
+    - mv dist /cache
+
+deploy-backend:
+  tags: ["docker"]
+  stage: deploy 
+  script:
+    - echo "Deploying backend..."
+    - cd $COMMON_SERVICES/sushi-counter
+    - docker compose down
+    - rm -f backend.jar
+    - mv /cache/backend.jar .
+    - docker compose up -d
+
+deploy-frontend:
+  tags: ["docker"]
+  stage: deploy
+  script:
+    - echo "Deploying frontend..."
+    - cd $COMMON_WWW
+    - rm -f sushi-counter/
+    - mv /cache/dist ./sushi-counter
