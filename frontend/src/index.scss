@@ -3,6 +3,8 @@ $primary: #ffc57d;
 @import "bootstrap/scss/functions";
 @import "bootstrap/scss/variables";
 
+@import url('https://fonts.googleapis.com/css2?family=Lobster+Two&display=swap');
+
 // merge with existing $theme-colors map
 $theme-colors: map-merge($theme-colors, (
         "primary": $primary,
@@ -22,6 +24,14 @@ $theme-colors: map-merge($theme-colors, (
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.app-title-test {
+  font-family: 'Lobster Two', sans-serif;
+  text-align: center;
+  font-size: 3rem;
+  margin-bottom: 2rem;
+  color: $primary;
 }
 
 .center-window {

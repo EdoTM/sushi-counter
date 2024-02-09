@@ -8,6 +8,8 @@ function HomePage() {
 
   return (
     <div className={"container-fluid pt-5"}>
+      <h1 className={"app-title-test"}>Sushi counter</h1>
+
       <input
         type="text"
         className={"form-control"}
