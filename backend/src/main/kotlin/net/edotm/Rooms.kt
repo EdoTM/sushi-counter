@@ -3,9 +3,10 @@ package net.edotm
 import io.ktor.util.logging.*
 import java.util.concurrent.ConcurrentHashMap
 
-const val MAX_ROOMS_PER_ADDRESS = 3
 
 object Rooms {
+    private const val MAX_ROOMS_PER_ADDRESS = 3
+
     private val logger = KtorSimpleLogger("Rooms")
 
     private val rooms = ConcurrentHashMap<String, Room>()
