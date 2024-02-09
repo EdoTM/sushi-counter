@@ -10,12 +10,14 @@ import io.ktor.server.sessions.*
 import io.ktor.server.websocket.*
 import io.ktor.util.logging.*
 import io.ktor.util.pipeline.*
+import io.ktor.util.reflect.*
 import io.ktor.websocket.*
 import net.edotm.Order
 import net.edotm.Rooms
 import net.edotm.Sessions
 import net.edotm.UserData
 import net.edotm.UserSession
+import java.nio.charset.Charset
 
 val logger = KtorSimpleLogger("Routing")
 
@@ -41,20 +43,9 @@ fun Application.configureRouting() {
             send("Connected to $room")
             for (frame in incoming) {
                 frame as? Frame.Text ?: continue
-                val command = frame.readText()
-                when {
-                    command.startsWith("order:") -> {
-                        placeOrder(command.removePrefix("order:"), userData)
-                        logger.info("Order placed by ${userData.sessionId}. Total orders: ${userData.orders}")
-                        send("OK")
-                    }
-
-                    command == "close" -> {
-                        Sessions.removeSession(userData.sessionId)
-                        userData.clearRoomAndOrders()
-                        close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
-                    }
-                }
+                val order = deserialize<Order>(frame)
+                userData.addOrder(order)
+                send("OK")
             }
         }
 
@@ -120,22 +111,20 @@ fun Application.configureRouting() {
     }
 }
 
-private fun placeOrder(order: String, userData: UserData) {
-    val tokens = order.split("/")
-    if (tokens.size != 2) {
-        throw BadRequestException("Order should be in format '<item>/<qty>'")
-    }
-    val (item, quantity) = tokens
-    val qty = quantity.toIntOrNull() ?: throw IllegalArgumentException("Quantity should be a number")
-    userData.addOrder(Order(item, qty))
-}
-
 private suspend fun PipelineContext<Unit, ApplicationCall>.retrieveRoomFromRequest(): String {
     try {
         return normalize(call.receiveText())
     } catch (e: Exception) {
         throw BadRequestException("Invalid room name")
     }
+}
+
+private suspend inline fun <reified T> DefaultWebSocketServerSession.deserialize(frame: Frame): T {
+    return converter!!.deserialize(
+        Charset.defaultCharset(),
+        TypeInfo(T::class, T::class.java),
+        content = frame
+    ) as T
 }
 
 private fun ApplicationCall.getSession(): UserData {
