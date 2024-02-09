@@ -5,7 +5,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 
 object Rooms {
-    private const val MAX_ROOMS_PER_ADDRESS = 3
+    var maxRoomsPerAddress = 3
+    var roomExpirationMillis: Long = 3_600_000 * 3
 
     private val logger = KtorSimpleLogger("Rooms")
 
@@ -20,12 +21,13 @@ object Rooms {
             roomsPerAddress[creatorAddress] = ArrayDeque()
         }
         val userRooms = roomsPerAddress[creatorAddress]!!
-        if (userRooms.size >= MAX_ROOMS_PER_ADDRESS) {
-            logger.warn("User from $creatorAddress tried to create more than $MAX_ROOMS_PER_ADDRESS rooms")
+        if (userRooms.size >= maxRoomsPerAddress) {
+            logger.warn("User from $creatorAddress tried to create more than $maxRoomsPerAddress rooms")
             remove(userRooms.removeFirst())
         }
         userRooms.addLast(name)
-        val room = Room(name)
+        val millisNow = System.currentTimeMillis()
+        val room = Room(name, expiration = millisNow + roomExpirationMillis)
         rooms[name] = room
         return room
     }
@@ -42,8 +44,11 @@ object Rooms {
         rooms.clear()
     }
 
-    fun removeEmptyRooms() {
-        rooms.entries.removeIf { it.value.users.isEmpty() }
+    fun cleanupEmptyRooms() {
+        val millisNow = System.currentTimeMillis()
+        rooms.entries.removeIf {
+            it.value.users.isEmpty() && it.value.expiration < millisNow
+        }
     }
 
     class RoomExistsException : Exception("Room already exists")

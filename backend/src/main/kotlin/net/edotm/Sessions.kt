@@ -6,10 +6,12 @@ import kotlin.NoSuchElementException
 
 object Sessions {
     private val sessions: ConcurrentHashMap<String, UserData> = ConcurrentHashMap()
+    var sessionExpirationMillis: Long = 3_600_000 * 3
 
     fun newSession(): String {
         val sessionId = UUID.randomUUID().toString()
-        sessions[sessionId] = UserData(sessionId)
+        val millisNow = System.currentTimeMillis()
+        sessions[sessionId] = UserData(sessionId, expiration = millisNow + sessionExpirationMillis)
         return sessionId
     }
 
