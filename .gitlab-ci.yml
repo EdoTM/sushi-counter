@@ -8,10 +8,10 @@ test-backend:
   image: amazoncorretto:21-alpine
   stage: test
   script:
+    - echo $CI_PROJECT_PATH && exit 1
     - cd backend
     - mv /cache/$CI_PROJECT_NAME/.gradle . || echo ""
     - ./gradlew test
-    - mv .gradle /cache/$CI_PROJECT_NAME
 
 build-backend:
   tags: ["docker"]
@@ -19,10 +19,10 @@ build-backend:
   stage: build
   script:
     - cd backend
-    - mv /cache/$CI_PROJECT_NAME/.gradle . || echo ""
     - ./gradlew build
     - mv .gradle /cache/$CI_PROJECT_NAME
-    - mv build/libs/backend-all.jar /cache/backend.jar
+    - mv build/libs/backend-all.jar ./backend.jar
+    - mv .gradle/ /cache/$CI_PROJECT_NAME/
 
 build-frontend:
   tags: ["docker"]
@@ -32,8 +32,6 @@ build-frontend:
     - cd frontend
     - npm install
     - npm run build
-    - rm -rf /cache/dist
-    - mv dist /cache
 
 deploy-backend:
   tags: ["docker"]
@@ -43,8 +41,8 @@ deploy-backend:
     - echo "Deploying backend..."
     - cd $COMMON_SERVICES/sushi-counter
     - docker compose down
+    - mv backend/backend.jar $COMMON_SERVICES/sushi-counter
     - rm -f backend.jar
-    - mv /cache/backend.jar .
     - ls
     - file backend.jar
     - docker compose up -d
