@@ -8,15 +8,17 @@ test-backend:
   image: amazoncorretto:21-alpine
   stage: test
   script:
-    - ./backend/gradlew test
+    - cd backend
+    - ./gradlew test
 
 build-backend:
   tags: ["docker"]
   image: amazoncorretto:21-alpine
   stage: build
   script:
-    - ./backend/gradlew build
-    - mv backend/build/libs/backend-all.jar /cache/backend.jar
+    - cd backend
+    - ./gradlew build
+    - mv build/libs/backend-all.jar /cache/backend.jar
 
 build-frontend:
   tags: ["docker"]
