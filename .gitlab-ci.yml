@@ -9,7 +9,9 @@ test-backend:
   stage: test
   script:
     - cd backend
+    - mv /cache/$CI_PROJECT_NAME/.gradle .
     - ./gradlew test
+    - mv .gradle /cache/$CI_PROJECT_NAME
 
 build-backend:
   tags: ["docker"]
@@ -17,7 +19,9 @@ build-backend:
   stage: build
   script:
     - cd backend
+    - mv /cache/$CI_PROJECT_NAME/.gradle .
     - ./gradlew build
+    - mv .gradle /cache/$CI_PROJECT_NAME
     - mv build/libs/backend-all.jar /cache/backend.jar
 
 build-frontend:
