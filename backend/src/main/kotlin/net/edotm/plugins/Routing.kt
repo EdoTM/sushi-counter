@@ -123,7 +123,7 @@ fun Application.configureRouting() {
 private fun placeOrder(order: String, userData: UserData) {
     val tokens = order.split("/")
     if (tokens.size != 2) {
-        throw IllegalArgumentException("Order should be in format '<item>x<qty>'")
+        throw BadRequestException("Order should be in format '<item>/<qty>'")
     }
     val (item, quantity) = tokens
     val qty = quantity.toIntOrNull() ?: throw IllegalArgumentException("Quantity should be a number")
