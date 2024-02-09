@@ -19,7 +19,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-const val testRoomName = "Flying Elephant"
+const val testRoomName = "testroom"
 
 class ApplicationTest {
 
