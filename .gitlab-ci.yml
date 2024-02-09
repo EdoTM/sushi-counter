@@ -7,23 +7,29 @@ test-backend:
   tags: ["docker"]
   image: amazoncorretto:21-alpine
   stage: test
+  before_script:
+    - mv /cache/$CI_PROJECT_NAME/.gradle ~/ || echo ""
   script:
     - cd backend
-    - mv /cache/$CI_PROJECT_NAME/.gradle . || echo ""
     - ./gradlew test
+  after_script:
+    - mv ~/.gradle /cache/$CI_PROJECT_NAME/
 
 build-backend:
   tags: ["docker"]
   image: amazoncorretto:21-alpine
   stage: build
+  before_script:
+    - mv /cache/$CI_PROJECT_NAME/.gradle ~/ || echo ""
   script:
     - cd backend
     - ./gradlew build
-    - mv .gradle/ /cache/$CI_PROJECT_NAME/
+  after_script:
+    - mv ~/.gradle /cache/$CI_PROJECT_NAME/
   artifacts:
     when: on_success
     paths:
-      - build/libs/backend-all.jar
+      - backend/build/libs/backend-all.jar
 
 build-frontend:
   tags: ["docker"]
@@ -36,7 +42,7 @@ build-frontend:
   artifacts:
     when: on_success
     paths:
-      - dist/
+      - frontend/dist/
 
 deploy-backend:
   tags: ["docker"]
@@ -44,13 +50,11 @@ deploy-backend:
   image: docker 
   script:
     - echo "Deploying backend..."
-    - mv ./backend/build/libs/backend-all.jar $COMMON_SERVICES/sushi-counter/_backend.jar
+    - mv backend/build/libs/backend-all.jar $COMMON_SERVICES/sushi-counter/_backend.jar
     - cd $COMMON_SERVICES/sushi-counter
     - docker compose down
     - rm -f backend.jar
     - mv _backend.jar backend.jar
-    - ls
-    - file backend.jar
     - docker compose up -d
 
 deploy-frontend:
