@@ -3,7 +3,7 @@ stages:
   - build
   - deploy
 
-test-backend:
+test-backend: #
   tags: ["docker"]
   image: amazoncorretto:21-alpine
   stage: test
