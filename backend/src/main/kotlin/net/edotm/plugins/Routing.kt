@@ -69,6 +69,7 @@ fun Application.configureRouting() {
             try {
                 userData.room = room
                 Rooms.createRoom(room, call.request.local.remoteAddress)
+                addToRoom(userData, room)
                 logger.info("User from ${call.request.local.remoteAddress} created room $room")
                 call.respond(HttpStatusCode.Created)
             } catch (e: Rooms.RoomExistsException) {
