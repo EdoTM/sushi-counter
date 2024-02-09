@@ -20,6 +20,10 @@ build-backend:
     - cd backend
     - ./gradlew build
     - mv .gradle/ /cache/$CI_PROJECT_NAME/
+  artifacts:
+    when: on_success
+    paths:
+      - build/libs/backend-all.jar
 
 build-frontend:
   tags: ["docker"]
@@ -29,6 +33,10 @@ build-frontend:
     - cd frontend
     - npm install
     - npm run build
+  artifacts:
+    when: on_success
+    paths:
+      - dist/
 
 deploy-backend:
   tags: ["docker"]
