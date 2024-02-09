@@ -67,7 +67,6 @@ fun Application.configureRouting() {
             val room = retrieveRoomFromRequest()
             val userData = call.getOrCreateSession()
             try {
-                userData.room = room
                 Rooms.createRoom(room, call.request.local.remoteAddress)
                 addToRoom(userData, room)
                 logger.info("User from ${call.request.local.remoteAddress} created room $room")
@@ -159,6 +158,7 @@ private fun ApplicationCall.getOrCreateSession(): UserData {
 }
 
 private fun addToRoom(user: UserData, room: String) {
+    user.clearRoomAndOrders()
     user.room = room
     Rooms.get(room).users.add(user)
 }
