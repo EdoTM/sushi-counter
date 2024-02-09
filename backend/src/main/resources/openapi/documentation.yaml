@@ -18,7 +18,55 @@ paths:
                 type: "string"
               examples:
                 Example#1:
-                  value: "Hello World!"
+                  value: "Hello, world!\n"
+  /order:
+    get:
+      description: ""
+      parameters:
+        - name: "Connection"
+          in: "header"
+          required: true
+          description: "Websocket Connection parameter"
+          schema:
+            type: "string"
+        - name: "Upgrade"
+          in: "header"
+          required: true
+          description: "Websocket Upgrade parameter"
+          schema:
+            type: "string"
+        - name: "Sec-WebSocket-Key"
+          in: "header"
+          required: true
+          description: "Websocket Sec-WebSocket-Key parameter"
+          schema:
+            type: "string"
+      responses:
+        "101":
+          description: "Switching Protocols"
+          headers:
+            Connection:
+              required: true
+              schema:
+                type: "string"
+            Upgrade:
+              required: true
+              schema:
+                type: "string"
+            Sec-WebSocket-Accept:
+              required: true
+              schema:
+                type: "string"
+  /orders:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Map_String"
   /room:
     delete:
       description: ""
@@ -50,3 +98,42 @@ paths:
             '*/*':
               schema:
                 type: "object"
+  /room/join:
+    post:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /room/total:
+    get:
+      description: ""
+      responses:
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Map_String"
+components:
+  schemas:
+    Map:
+      type: "object"
+      properties: { }
+    Map_String:
+      type: "string"
