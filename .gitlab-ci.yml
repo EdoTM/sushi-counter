@@ -8,7 +8,7 @@ test-backend:
   image: amazoncorretto:21-alpine
   stage: test
   before_script:
-    - mv /cache/$CI_PROJECT_NAME/.gradle ~/ || echo ""
+    - mv /cache/$CI_PROJECT_NAME/.gradle ~/ || echo "" #
   script:
     - cd backend
     - ./gradlew test
