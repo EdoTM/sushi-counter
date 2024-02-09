@@ -32,6 +32,7 @@ build-frontend:
     - cd frontend
     - npm install
     - npm run build
+    - rm -rf /cache/dist
     - mv dist /cache
 
 deploy-backend:
