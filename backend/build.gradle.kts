@@ -13,8 +13,6 @@ version = "0.0.1"
 
 application {
     mainClass.set("net.edotm.ApplicationKt")
-
-    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=true")
 }
 
 
