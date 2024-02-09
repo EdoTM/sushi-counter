@@ -140,7 +140,7 @@ class ApplicationTest {
             send("close")
         }
         client.get("/orders").apply {
-            assertEquals("{}", body<String>())
+            assertEquals(call.response.status, HttpStatusCode.BadRequest)
         }
     }
 
