@@ -26,7 +26,7 @@ function MakeOrdersView({
           type="text"
           className={"form-control"}
           value={customItem}
-          onChange={(e) => setCustomItem(e.target.value)}
+          onChange={(e) => setCustomItem(e.currentTarget.value)}
           placeholder={"Custom item"}
         />
         <button
