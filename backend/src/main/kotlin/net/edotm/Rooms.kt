@@ -42,6 +42,10 @@ object Rooms {
         rooms.clear()
     }
 
+    fun removeEmptyRooms() {
+        rooms.entries.removeIf { it.value.users.isEmpty() }
+    }
+
     class RoomExistsException : Exception("Room already exists")
     class RoomNotFoundException : Exception("Room not found")
 }

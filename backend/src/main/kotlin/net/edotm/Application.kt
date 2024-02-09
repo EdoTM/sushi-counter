@@ -23,6 +23,7 @@ fun Application.module() {
     sessionInvalidationTimer.scheduleAtFixedRate(object : TimerTask() {
         override fun run() {
             Sessions.invalidateExpiredSessions()
+            Rooms.removeEmptyRooms()
         }
     }, 0, 3600000)
 }
