@@ -8,6 +8,6 @@ class Room(
 
     fun aggregateAndGetOrders(): Map<String, Int> {
         val orders = users.flatMap { it.orders }
-        return orders.groupingBy { it.name }.fold(0) { acc, order -> acc + order.quantity }
+        return orders.groupingBy { it.item }.fold(0) { acc, order -> acc + order.quantity }
     }
 }

@@ -60,7 +60,7 @@ fun Application.configureRouting() {
 
         get("/orders") {
             val userData = call.getSession()
-            call.respond(userData.orders.associate { it.name to it.quantity })
+            call.respond(userData.orders.associate { it.item to it.quantity })
         }
 
         put("/room") {

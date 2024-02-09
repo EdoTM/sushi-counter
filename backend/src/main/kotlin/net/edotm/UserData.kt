@@ -14,7 +14,7 @@ class UserData(
     }
 
     fun addOrder(order: Order) {
-        _orders.removeIf { it.name == order.name }
+        _orders.removeIf { it.item == order.item }
         if (order.quantity > 0) {
             _orders.add(order)
         }
