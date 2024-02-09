@@ -70,6 +70,10 @@ fun Application.configureRouting() {
         post("/room/join") {
             val room = retrieveRoomFromRequest()
             val userData = call.getOrCreateSession()
+            if (userData.room == room) {
+                call.respond(HttpStatusCode.OK)
+                return@post
+            }
             try {
                 addToRoom(userData, room)
                 logger.info("User joined room $room")
