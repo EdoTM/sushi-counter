@@ -37,6 +37,8 @@ build-frontend:
   stage: build
   script:
     - cd frontend
+    - export VITE_API_BASE_URL=$API_BASE_URL
+    - export VITE_HTML_BASE_URL=/sushi-counter/
     - npm install
     - npm run build
   artifacts:
