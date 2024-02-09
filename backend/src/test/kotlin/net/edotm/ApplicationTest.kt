@@ -25,7 +25,9 @@ class ApplicationTest {
 
     @BeforeTest
     fun setup() {
+        Sessions.clear()
         Rooms.clear()
+        Rooms.clearAddresses()
     }
 
     @Test

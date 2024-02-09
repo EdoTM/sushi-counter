@@ -44,6 +44,10 @@ object Rooms {
         rooms.clear()
     }
 
+    fun clearAddresses() {
+        roomsPerAddress.clear()
+    }
+
     fun cleanupEmptyRooms() {
         val millisNow = System.currentTimeMillis()
         rooms.entries.removeIf {

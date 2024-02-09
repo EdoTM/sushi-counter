@@ -43,5 +43,9 @@ object Sessions {
         sessions.entries.removeIf { it.value.expiration < now }
     }
 
+    fun clear() {
+        sessions.clear()
+    }
+
     class SessionNotFoundException : NoSuchElementException("Session not found")
 }
