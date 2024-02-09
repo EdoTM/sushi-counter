@@ -45,6 +45,8 @@ deploy-backend:
     - docker compose down
     - rm -f backend.jar
     - mv /cache/backend.jar .
+    - ls
+    - file backend.jar
     - docker compose up -d
 
 deploy-frontend:
@@ -53,5 +55,5 @@ deploy-frontend:
   script:
     - echo "Deploying frontend..."
     - cd $COMMON_WWW
-    - rm -f sushi-counter/
+    - rm -rf sushi-counter/
     - mv /cache/dist ./sushi-counter
