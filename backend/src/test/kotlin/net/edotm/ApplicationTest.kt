@@ -236,7 +236,7 @@ private fun ApplicationTestBuilder.setupTestApp() {
         configureContentNegotiation()
         configureWebSockets()
         configureRouting()
-        configureSessions()
+        configureSessions("123")
     }
 }
 
