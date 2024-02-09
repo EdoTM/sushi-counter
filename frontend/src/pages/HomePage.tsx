@@ -36,7 +36,7 @@ function HomePage() {
               alert("Error creating room");
               return;
             }
-            window.location.href = `/room`;
+            navigate(`/room`);
           }}
         >
           Create or join
