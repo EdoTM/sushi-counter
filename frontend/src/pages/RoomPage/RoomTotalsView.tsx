@@ -23,7 +23,7 @@ function RoomTotalsView({ allItems, onGoBackClick }: RoomTotalsViewProps) {
 
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => roomCounts.get(item) ?? 0 > 0);
-  });
+  }, [allItems, roomCounts]);
   return (
     <>
       <VirtualReviewItemList items={filteredItems} counts={roomCounts} />

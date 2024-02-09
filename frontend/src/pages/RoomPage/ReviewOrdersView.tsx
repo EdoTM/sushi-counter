@@ -19,7 +19,7 @@ function ReviewOrdersView({
 }: ReviewOrdersViewProps) {
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => counts.get(item) ?? 0 > 0);
-  });
+  }, [allItems, counts]);
   return (
     <>
       {filteredItems.length > 0 ? (
