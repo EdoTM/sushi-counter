@@ -28,10 +28,14 @@ function MakeOrdersView({
           value={customItem}
           onChange={(e) => setCustomItem(e.currentTarget.value)}
           placeholder={"Custom item"}
+          maxLength={20}
         />
         <button
           className={"btn btn-primary"}
           onClick={() => onAddItem(customItem)}
+          disabled={
+            !/^[a-zA-Z0-9 ]*$/.test(customItem) || customItem.length > 20
+          }
         >
           Add
         </button>
