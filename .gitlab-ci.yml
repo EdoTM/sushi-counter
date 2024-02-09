@@ -32,7 +32,8 @@ build-frontend:
 
 deploy-backend:
   tags: ["docker"]
-  stage: deploy 
+  stage: deploy
+  image: docker 
   script:
     - echo "Deploying backend..."
     - cd $COMMON_SERVICES/sushi-counter
