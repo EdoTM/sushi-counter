@@ -199,6 +199,22 @@ class ApplicationTest {
     }
 
     @Test
+    fun ifUserChangesRoom_ItDoesNotHaveOrdersMade() = testApplication {
+        setupTestApp()
+        val client = getHttpClient()
+        client.setupTestRoom()
+        client.webSocket("/order") {
+            incoming.receive()
+            send("order:Tea/2")
+            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
+        }
+        client.put("/room") { setBody("testroom2") }
+        client.get("/orders").apply {
+            assertEquals(emptyMap(), body<Map<String, Int>>())
+        }
+    }
+
+    @Test
     fun getTotalOrdersGiveAggregatedOrders() = testApplication {
         setupTestApp()
         val client1 = getHttpClient()
