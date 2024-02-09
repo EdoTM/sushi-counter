@@ -68,8 +68,8 @@ fun Application.configureRouting() {
             val userData = call.getOrCreateSession()
             try {
                 userData.room = room
-                Rooms.createRoom(room, listOf(userData))
-                logger.info("Room $room created")
+                Rooms.createRoom(room, call.request.local.remoteAddress)
+                logger.info("User from ${call.request.local.remoteAddress} created room $room")
                 call.respond(HttpStatusCode.Created)
             } catch (e: Rooms.RoomExistsException) {
                 call.respond(HttpStatusCode.OK)

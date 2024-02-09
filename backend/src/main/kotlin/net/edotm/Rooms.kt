@@ -1,22 +1,32 @@
 package net.edotm
 
+import io.ktor.util.logging.*
 import java.util.concurrent.ConcurrentHashMap
 
-object Rooms {
-    private val rooms: ConcurrentHashMap<String, Room> = ConcurrentHashMap()
+const val MAX_ROOMS_PER_ADDRESS = 3
 
-    fun createRoom(name: String): Room {
+object Rooms {
+    private val logger = KtorSimpleLogger("Rooms")
+
+    private val rooms = ConcurrentHashMap<String, Room>()
+    private val roomsPerAddress = ConcurrentHashMap<String, ArrayDeque<String>>()
+
+    fun createRoom(name: String, creatorAddress: String): Room {
         if (rooms.containsKey(name)) {
             throw RoomExistsException()
         }
-        val room = Room()
+        if (!roomsPerAddress.containsKey(creatorAddress)) {
+            roomsPerAddress[creatorAddress] = ArrayDeque()
+        }
+        val userRooms = roomsPerAddress[creatorAddress]!!
+        if (userRooms.size >= MAX_ROOMS_PER_ADDRESS) {
+            logger.warn("User from $creatorAddress tried to create more than $MAX_ROOMS_PER_ADDRESS rooms")
+            remove(userRooms.removeFirst())
+        }
+        userRooms.addLast(name)
+        val room = Room(name)
         rooms[name] = room
         return room
-    }
-
-    fun createRoom(name: String, sessions: Iterable<UserData>) {
-        createRoom(name)
-        rooms[name]!!.users.addAll(sessions)
     }
 
     fun remove(name: String) {
