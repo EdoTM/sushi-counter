@@ -9,7 +9,7 @@ test-backend:
   stage: test
   script:
     - cd backend
-    - mv -f /cache/$CI_PROJECT_NAME/.gradle .
+    - mv -f /cache/$CI_PROJECT_NAME/.gradle .; true
     - ./gradlew test
     - mv .gradle /cache/$CI_PROJECT_NAME
 
@@ -19,7 +19,7 @@ build-backend:
   stage: build
   script:
     - cd backend
-    - mv -f /cache/$CI_PROJECT_NAME/.gradle .
+    - mv -f /cache/$CI_PROJECT_NAME/.gradle .; true
     - ./gradlew build
     - mv .gradle /cache/$CI_PROJECT_NAME
     - mv build/libs/backend-all.jar /cache/backend.jar
