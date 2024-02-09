@@ -72,8 +72,7 @@ function RoomPage() {
       } else {
         newCounts.set(item, count);
       }
-      console.log(`Sending - order:${item}/${count}`);
-      ws.send(`order:${item}/${count}`);
+      ws.send(JSON.stringify({ item, quantity: count }));
       setCounts(newCounts);
     }
   };
