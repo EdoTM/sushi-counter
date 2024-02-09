@@ -9,7 +9,7 @@ test-backend:
   stage: test
   script:
     - cd backend
-    - mv -f /cache/$CI_PROJECT_NAME/.gradle . 2>/dev/null || exit 0 
+    - mv /cache/$CI_PROJECT_NAME/.gradle . || return 0 
     - ./gradlew test
     - mv .gradle /cache/$CI_PROJECT_NAME
 
@@ -19,7 +19,7 @@ build-backend:
   stage: build
   script:
     - cd backend
-    - mv -f /cache/$CI_PROJECT_NAME/.gradle . 2>/dev/null || exit 0
+    - mv /cache/$CI_PROJECT_NAME/.gradle . || return 0
     - ./gradlew build
     - mv .gradle /cache/$CI_PROJECT_NAME
     - mv build/libs/backend-all.jar /cache/backend.jar
@@ -29,7 +29,6 @@ build-frontend:
   image: node:alpine
   stage: build
   script:
-    - export VITE_API_BASE_URL=$API_BASE_URL
     - cd frontend
     - npm install
     - npm run build
