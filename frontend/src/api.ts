@@ -1,7 +1,7 @@
 import axiosInstance from "./axiosInstance.ts";
 import {AxiosResponse} from "axios";
 
-const WS_URL = "ws://" + import.meta.env.VITE_API_BASE_URL.split("//")[1];
+const WS_URL = import.meta.env.VITE_API_BASE_URL.replace("http", "ws");
 
 export function joinRoom(roomName: string) {
   return axiosInstance.post(`/room/join`, roomName);
