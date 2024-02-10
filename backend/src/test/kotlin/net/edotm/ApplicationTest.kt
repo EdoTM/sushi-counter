@@ -55,28 +55,6 @@ class ApplicationTest {
         }
     }
 
-    @Test
-    fun deleteExistingRoom() = testApplication {
-        setupTestApp()
-        val client = getHttpClient()
-        client.put("/room") {
-            setBody(testRoomName)
-        }.apply {
-            assertEquals(HttpStatusCode.Created, status)
-        }
-        client.delete("/room").apply {
-            assertEquals(HttpStatusCode.OK, status)
-        }
-    }
-
-    @Test
-    fun ifDeleteNonExistentRoom_ThenReturnNotFound() = testApplication {
-        setupTestApp()
-        client.delete("/room").apply {
-            assertEquals(HttpStatusCode.NotFound, status)
-        }
-    }
-
     @Test(expected = ClosedReceiveChannelException::class)
     fun ifConnectToNonExistentRoom_ShouldClose() = testApplication {
         setupTestApp()

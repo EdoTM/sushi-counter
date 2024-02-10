@@ -1,14 +1,11 @@
 package net.edotm
 
-import io.ktor.util.logging.*
 import java.util.concurrent.ConcurrentHashMap
 
 
 object Rooms {
     var maxRoomsPerAddress = 3
     var roomExpirationMillis: Long = 3_600_000 * 3
-
-    private val logger = KtorSimpleLogger("Rooms")
 
     private val rooms = ConcurrentHashMap<String, Room>()
     private val roomsPerAddress = ConcurrentHashMap<String, ArrayDeque<String>>()
@@ -22,8 +19,7 @@ object Rooms {
         }
         val userRooms = roomsPerAddress[creatorAddress]!!
         if (userRooms.size >= maxRoomsPerAddress) {
-            logger.warn("User from $creatorAddress tried to create more than $maxRoomsPerAddress rooms")
-            remove(userRooms.removeFirst())
+            rooms.remove(userRooms.removeFirst())
         }
         userRooms.addLast(name)
         val millisNow = System.currentTimeMillis()
@@ -32,8 +28,8 @@ object Rooms {
         return room
     }
 
-    fun remove(name: String) {
-        rooms.remove(name) ?: throw RoomNotFoundException()
+    fun hasRoom(name: String): Boolean {
+        return rooms.containsKey(name)
     }
 
     fun get(name: String): Room {
