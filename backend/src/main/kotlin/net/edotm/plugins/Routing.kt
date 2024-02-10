@@ -105,7 +105,10 @@ fun Application.configureRouting() {
                 return@get
             }
             try {
-                val orders = Rooms.get(room).getTotalOrders()
+                val orders = Rooms
+                    .get(room)
+                    .getTotalOrders()
+                    .associate { it.item to it.quantity }
                 call.respond(orders)
             } catch (e: Rooms.RoomNotFoundException) {
                 call.respond(HttpStatusCode.NotFound)
@@ -124,9 +127,7 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.retrieveRoomFromReque
 
 private suspend inline fun <reified T> DefaultWebSocketServerSession.deserialize(frame: Frame): T {
     return converter!!.deserialize(
-        Charset.defaultCharset(),
-        TypeInfo(T::class, T::class.java),
-        content = frame
+        Charset.defaultCharset(), TypeInfo(T::class, T::class.java), content = frame
     ) as T
 }
 
