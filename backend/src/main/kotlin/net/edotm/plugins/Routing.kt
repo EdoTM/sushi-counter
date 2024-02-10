@@ -35,23 +35,33 @@ fun Application.configureRouting() {
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No session present"))
                 return@webSocket
             }
-            val room = userData.room
-            if (room == null) {
+            val roomName = userData.currentRoom
+            if (roomName == null || !Rooms.hasRoom(roomName)) {
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No room"))
                 return@webSocket
             }
-            send("Connected to $room")
+            send("Connected to $roomName")
+            val room = Rooms.get(roomName)
             for (frame in incoming) {
                 frame as? Frame.Text ?: continue
                 val order = deserialize<Order>(frame)
-                userData.addOrder(order)
+                room.addUserOrder(userData, order)
                 send("OK")
             }
         }
 
         get("/orders") {
             val userData = call.getSession()
-            call.respond(userData.orders.associate { it.item to it.quantity })
+            val room = userData.currentRoom
+            if (room == null || !Rooms.hasRoom(room)) {
+                call.respond(HttpStatusCode.NotFound)
+                return@get
+            }
+            val orders = Rooms
+                .get(room)
+                .getUserOrders(userData)
+                .associate { it.item to it.quantity }
+            call.respond(orders)
         }
 
         put("/room") {
@@ -59,7 +69,8 @@ fun Application.configureRouting() {
             val userData = call.getOrCreateSession()
             try {
                 Rooms.createRoom(room, call.request.local.remoteAddress)
-                addToRoom(userData, room)
+                Rooms.get(room).addUser(userData)
+                userData.currentRoom = room
                 logger.info("User from ${call.request.local.remoteAddress} created room $room")
                 call.respond(HttpStatusCode.Created)
             } catch (e: Rooms.RoomExistsException) {
@@ -70,28 +81,14 @@ fun Application.configureRouting() {
         post("/room/join") {
             val room = retrieveRoomFromRequest()
             val userData = call.getOrCreateSession()
-            if (userData.room == room) {
+            if (userData.currentRoom == room) {
                 call.respond(HttpStatusCode.OK)
                 return@post
             }
             try {
-                addToRoom(userData, room)
+                Rooms.get(room).addUser(userData)
+                userData.currentRoom = room
                 logger.info("User joined room $room")
-                call.respond(HttpStatusCode.OK)
-            } catch (e: Rooms.RoomNotFoundException) {
-                call.respond(HttpStatusCode.NotFound)
-            }
-        }
-
-        delete("/room") {
-            val userData = call.getOrCreateSession()
-            if (userData.room == null) {
-                call.respond(HttpStatusCode.NotFound)
-                return@delete
-            }
-            try {
-                Rooms.remove(userData.room!!)
-                userData.clearRoomAndOrders()
                 call.respond(HttpStatusCode.OK)
             } catch (e: Rooms.RoomNotFoundException) {
                 call.respond(HttpStatusCode.NotFound)
@@ -100,13 +97,13 @@ fun Application.configureRouting() {
 
         get("/room/total") {
             val userData = call.getSession()
-            val room = userData.room
+            val room = userData.currentRoom
             if (room == null) {
                 call.respond(HttpStatusCode.NotFound)
                 return@get
             }
             try {
-                val orders = Rooms.get(room).aggregateAndGetOrders()
+                val orders = Rooms.get(room).getTotalOrders()
                 call.respond(orders)
             } catch (e: Rooms.RoomNotFoundException) {
                 call.respond(HttpStatusCode.NotFound)
@@ -148,12 +145,6 @@ private fun ApplicationCall.getOrCreateSession(): UserData {
         sessions.set(UserSession(newSessionId))
         return Sessions.get(newSessionId)
     }
-}
-
-private fun addToRoom(user: UserData, room: String) {
-    user.clearRoomAndOrders()
-    user.room = room
-    Rooms.get(room).users.add(user)
 }
 
 private fun normalize(s: String): String {

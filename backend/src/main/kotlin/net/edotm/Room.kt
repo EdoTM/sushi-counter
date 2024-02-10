@@ -7,8 +7,11 @@ class Room(
     val users: ConcurrentHashMap<UserData, HashSet<Order>> = ConcurrentHashMap(),
     val expiration: Long = 3_600_000 * 3,
 ) {
+    fun getUserOrders(user: UserData): List<Order> {
+        return users[user]?.toList() ?: throw UserNotFoundException()
+    }
 
-    fun aggregateAndGetOrders(): List<Order> {
+    fun getTotalOrders(): List<Order> {
         return users.values
             .flatten()
             .groupingBy { it.item }
@@ -24,11 +27,5 @@ class Room(
         users[user]?.add(order)
     }
 
-    fun removeUser(user: UserData) {
-        users.remove(user)
-    }
-
-    fun removeUserOrder(user: UserData, order: Order) {
-        users[user]?.remove(order)
-    }
+    class UserNotFoundException : Exception("User not found")
 }
