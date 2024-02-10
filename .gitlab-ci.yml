@@ -7,8 +7,10 @@ test-backend:
   tags: ["docker"]
   image: amazoncorretto:21-alpine
   stage: test
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
   before_script:
-    - mv /cache/$CI_PROJECT_NAME/.gradle ~/ || echo "" #
+    - mv /cache/$CI_PROJECT_NAME/.gradle ~/ || echo ""
   script:
     - cd backend
     - ./gradlew test
@@ -19,6 +21,8 @@ build-backend:
   tags: ["docker"]
   image: amazoncorretto:21-alpine
   stage: build
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
   before_script:
     - mv /cache/$CI_PROJECT_NAME/.gradle ~/ || echo ""
   script:
@@ -35,6 +39,8 @@ build-frontend:
   tags: ["docker"]
   image: node:alpine
   stage: build
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
   script:
     - cd frontend
     - export VITE_API_BASE_URL=$API_BASE_URL
