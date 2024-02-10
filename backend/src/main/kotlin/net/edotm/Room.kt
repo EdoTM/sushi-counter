@@ -24,7 +24,9 @@ class Room(
     }
 
     fun addUserOrder(user: UserData, order: Order) {
-        users[user]?.add(order)
+        if (!users.containsKey(user)) throw UserNotFoundException()
+        users[user]!!.remove(order)
+        users[user]!!.add(order)
     }
 
     class UserNotFoundException : Exception("User not found")

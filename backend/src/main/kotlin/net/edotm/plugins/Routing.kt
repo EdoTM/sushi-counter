@@ -12,11 +12,8 @@ import io.ktor.util.logging.*
 import io.ktor.util.pipeline.*
 import io.ktor.util.reflect.*
 import io.ktor.websocket.*
-import net.edotm.Order
-import net.edotm.Rooms
+import net.edotm.*
 import net.edotm.Sessions
-import net.edotm.UserData
-import net.edotm.UserSession
 import java.nio.charset.Charset
 
 val logger = KtorSimpleLogger("Routing")
@@ -45,8 +42,13 @@ fun Application.configureRouting() {
             for (frame in incoming) {
                 frame as? Frame.Text ?: continue
                 val order = deserialize<Order>(frame)
-                room.addUserOrder(userData, order)
-                send("OK")
+                try {
+                    room.addUserOrder(userData, order)
+                    send("OK")
+                } catch (e: Room.UserNotFoundException) {
+                    close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "User not found"))
+                    return@webSocket
+                }
             }
         }
 
