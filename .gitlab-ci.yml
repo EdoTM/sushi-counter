@@ -50,6 +50,8 @@ deploy-backend:
   tags: ["docker"]
   stage: deploy
   image: docker 
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
   script:
     - echo "Deploying backend..."
     - mv backend/build/libs/backend-all.jar $COMMON_SERVICES/sushi-counter/_backend.jar
@@ -62,6 +64,8 @@ deploy-backend:
 deploy-frontend:
   tags: ["docker"]
   stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
   script:
     - echo "Deploying frontend..."
     - mv ./frontend/dist/ $COMMON_WWW
