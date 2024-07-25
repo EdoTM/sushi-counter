@@ -26,18 +26,16 @@ function MakeOrdersView({
           type="text"
           className={"form-control"}
           value={customItem}
-          onChange={(e) => setCustomItem(e.target.value)}
+          onChange={(e) => setCustomItem(e.currentTarget.value)}
           placeholder={"Custom item"}
+          maxLength={20}
         />
-        <button
-          className={"btn btn-secondary"}
-          onClick={() => setEditCustomItem(false)}
-        >
-          Cancel
-        </button>
         <button
           className={"btn btn-primary"}
           onClick={() => onAddItem(customItem)}
+          disabled={
+            !/^[a-zA-Z0-9 ]*$/.test(customItem) || customItem.length > 20
+          }
         >
           Add
         </button>

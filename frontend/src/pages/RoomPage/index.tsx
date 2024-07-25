@@ -72,8 +72,7 @@ function RoomPage() {
       } else {
         newCounts.set(item, count);
       }
-      console.log(`Sending - order:${item}/${count}`);
-      ws.send(`order:${item}/${count}`);
+      ws.send(JSON.stringify({ item, quantity: count }));
       setCounts(newCounts);
     }
   };
@@ -95,6 +94,7 @@ function RoomPage() {
           <RoomTotalsView
             allItems={items}
             onGoBackClick={() => setPage("review")}
+            addNewItems={addCustomItems}
           />
         );
       default:
@@ -118,8 +118,8 @@ function RoomPage() {
 
   return (
     <>
-      <div className={"container-fluid position-relative py-3"}>
-        <h1>{pageTitle[page]}</h1>
+      <div className={"container-fluid position-relative py-3 pb-5"}>
+        <h1 className={"text-center"}>{pageTitle[page]}</h1>
         {loading ? <p>Loading...</p> : pageView()}
       </div>
       {disconnected && <DisconnectedAlert />}

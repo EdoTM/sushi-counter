@@ -1,0 +1,86 @@
+stages:
+  - test
+  - build
+  - deploy
+
+test-backend:
+  tags: ["docker"]
+  image: amazoncorretto:21-alpine
+  stage: test
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_TAG
+  before_script:
+    - mv /cache/$CI_PROJECT_NAME/.gradle ~/ || echo ""
+  script:
+    - cd backend
+    - ./gradlew test
+  after_script:
+    - mv ~/.gradle /cache/$CI_PROJECT_NAME/
+
+build-backend:
+  tags: ["docker"]
+  image: amazoncorretto:21-alpine
+  stage: build
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_TAG
+  before_script:
+    - mv /cache/$CI_PROJECT_NAME/.gradle ~/ || echo ""
+  script:
+    - cd backend
+    - ./gradlew build
+  after_script:
+    - mv ~/.gradle /cache/$CI_PROJECT_NAME/
+  artifacts:
+    when: on_success
+    paths:
+      - backend/build/libs/backend-all.jar
+
+build-frontend:
+  tags: ["docker"]
+  image: node:alpine
+  stage: build
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_TAG
+  script:
+    - cd frontend
+    - export VITE_API_BASE_URL=$API_BASE_URL
+    - export VITE_HTML_BASE_URL=/sushi-counter/
+    - npm install
+    - npm run build
+  artifacts:
+    when: on_success
+    paths:
+      - frontend/dist/
+
+deploy-backend:
+  tags: ["docker"]
+  stage: deploy
+  image: docker 
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - echo "Deploying backend..."
+    - mv backend/build/libs/backend-all.jar $COMMON_SERVICES/sushi-counter/_backend.jar
+    - cd $COMMON_SERVICES/sushi-counter
+    - docker compose down
+    - rm -f backend.jar
+    - mv _backend.jar backend.jar
+    - docker compose up -d
+
+deploy-frontend:
+  tags: ["docker"]
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - echo "Deploying frontend..."
+    - mv ./frontend/dist/ $COMMON_WWW
+    - cd $COMMON_WWW
+    - rm -rf sushi-counter/
+    - mv dist sushi-counter

@@ -55,28 +55,6 @@ class ApplicationTest {
         }
     }
 
-    @Test
-    fun deleteExistingRoom() = testApplication {
-        setupTestApp()
-        val client = getHttpClient()
-        client.put("/room") {
-            setBody(testRoomName)
-        }.apply {
-            assertEquals(HttpStatusCode.Created, status)
-        }
-        client.delete("/room").apply {
-            assertEquals(HttpStatusCode.OK, status)
-        }
-    }
-
-    @Test
-    fun ifDeleteNonExistentRoom_ThenReturnNotFound() = testApplication {
-        setupTestApp()
-        client.delete("/room").apply {
-            assertEquals(HttpStatusCode.NotFound, status)
-        }
-    }
-
     @Test(expected = ClosedReceiveChannelException::class)
     fun ifConnectToNonExistentRoom_ShouldClose() = testApplication {
         setupTestApp()
@@ -102,11 +80,7 @@ class ApplicationTest {
         setupTestApp()
         val client = getHttpClient()
         client.setupTestRoom()
-        client.webSocket("/order") {
-            incoming.receive()
-            send("order:Tea/2")
-            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
-        }
+        client.placeOrder("Tea", 2)
         client.get("/orders").apply {
             println(body<String>())
             assertEquals(mapOf("Tea" to 2), body<Map<String, Int>>())
@@ -118,29 +92,9 @@ class ApplicationTest {
         setupTestApp()
         val client = getHttpClient()
         client.setupTestRoom()
-        client.webSocket("/order") {
-            incoming.receive()
-            send("order:Tea/2")
-            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
-            send("order:Tea/3")
-            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
-        }
+        client.placeMultipleOrders("Tea" to 2, "Tea" to 3)
         client.get("/orders").apply {
             assertEquals(mapOf("Tea" to 3), body<Map<String, Int>>())
-        }
-    }
-
-    @Test
-    fun ifCloseConnection_ShouldRemoveSession() = testApplication {
-        setupTestApp()
-        val client = getHttpClient()
-        client.setupTestRoom()
-        client.webSocket("/order") {
-            incoming.receive()
-            send("close")
-        }
-        client.get("/orders").apply {
-            assertEquals(call.response.status, HttpStatusCode.BadRequest)
         }
     }
 
@@ -164,11 +118,7 @@ class ApplicationTest {
         client2.post("/room/join") { setBody(testRoomName) }.apply {
             assertEquals(HttpStatusCode.OK, status)
         }
-        client2.webSocket("/order") {
-            incoming.receive()
-            send("order:Coffee/1")
-            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
-        }
+        client2.placeOrder("Coffee", 1)
         client2.get("/orders").apply {
             assertEquals(mapOf("Coffee" to 1), body<Map<String, Int>>())
         }
@@ -183,18 +133,22 @@ class ApplicationTest {
         client2.post("/room/join") { setBody(testRoomName) }.apply {
             assertEquals(HttpStatusCode.OK, status)
         }
-        client1.webSocket("/order") {
-            incoming.receive()
-            send("order:Tea/2")
-            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
-        }
-        client2.webSocket("/order") {
-            incoming.receive()
-            send("order:Coffee/1")
-            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
-        }
+        client1.placeOrder("Tea", 2)
+        client2.placeOrder("Coffee", 1)
         client2.get("/room/total").apply {
             assertEquals(mapOf("Tea" to 2, "Coffee" to 1), body<Map<String, Int>>())
+        }
+    }
+
+    @Test
+    fun ifUserChangesRoom_ItDoesNotHaveOrdersMade() = testApplication {
+        setupTestApp()
+        val client = getHttpClient()
+        client.setupTestRoom()
+        client.placeOrder("Tea", 2)
+        client.put("/room") { setBody("testroom2") }
+        client.get("/orders").apply {
+            assertEquals(emptyMap(), body<Map<String, Int>>())
         }
     }
 
@@ -207,16 +161,8 @@ class ApplicationTest {
         client2.post("/room/join") { setBody(testRoomName) }.apply {
             assertEquals(HttpStatusCode.OK, status)
         }
-        client1.webSocket("/order") {
-            incoming.receive()
-            send("order:Coffee/2")
-            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
-        }
-        client2.webSocket("/order") {
-            incoming.receive()
-            send("order:Coffee/1")
-            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
-        }
+        client1.placeOrder("Coffee", 2)
+        client2.placeOrder("Coffee", 1)
         client2.get("/room/total").apply {
             assertEquals(mapOf("Coffee" to 3), body<Map<String, Int>>())
         }
@@ -242,4 +188,22 @@ private fun ApplicationTestBuilder.setupTestApp() {
 
 private suspend fun HttpClient.setupTestRoom() {
     put("/room") { setBody(testRoomName) }
+}
+
+private suspend fun HttpClient.placeOrder(item: String, quantity: Int) {
+    webSocket("/order") {
+        incoming.receive()
+        send("{\"item\":\"$item\",\"quantity\":$quantity}")
+        assertEquals("OK", (incoming.receive() as Frame.Text).readText())
+    }
+}
+
+private suspend fun HttpClient.placeMultipleOrders(vararg orders: Pair<String, Int>) {
+    webSocket("/order") {
+        incoming.receive()
+        orders.forEach { (item, quantity) ->
+            send("{\"item\":\"$item\",\"quantity\":$quantity}")
+            assertEquals("OK", (incoming.receive() as Frame.Text).readText())
+        }
+    }
 }

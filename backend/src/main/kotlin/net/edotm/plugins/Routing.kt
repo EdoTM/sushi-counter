@@ -10,12 +10,11 @@ import io.ktor.server.sessions.*
 import io.ktor.server.websocket.*
 import io.ktor.util.logging.*
 import io.ktor.util.pipeline.*
+import io.ktor.util.reflect.*
 import io.ktor.websocket.*
-import net.edotm.Order
-import net.edotm.Rooms
+import net.edotm.*
 import net.edotm.Sessions
-import net.edotm.UserData
-import net.edotm.UserSession
+import java.nio.charset.Charset
 
 val logger = KtorSimpleLogger("Routing")
 
@@ -33,43 +32,47 @@ fun Application.configureRouting() {
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No session present"))
                 return@webSocket
             }
-            val room = userData.room
-            if (room == null) {
+            val roomName = userData.currentRoom
+            if (roomName == null || !Rooms.hasRoom(roomName)) {
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No room"))
                 return@webSocket
             }
-            send("Connected to $room")
+            send("Connected to $roomName")
+            val room = Rooms.get(roomName)
             for (frame in incoming) {
                 frame as? Frame.Text ?: continue
-                val command = frame.readText()
-                when {
-                    command.startsWith("order:") -> {
-                        placeOrder(command.removePrefix("order:"), userData)
-                        logger.info("Order placed by ${userData.sessionId}. Total orders: ${userData.orders}")
-                        send("OK")
-                    }
-
-                    command == "close" -> {
-                        Sessions.removeSession(userData.sessionId)
-                        userData.clearRoomAndOrders()
-                        close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
-                    }
+                val order = deserialize<Order>(frame)
+                try {
+                    room.addUserOrder(userData, order)
+                    send("OK")
+                } catch (e: Room.UserNotFoundException) {
+                    close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "User not found"))
+                    return@webSocket
                 }
             }
         }
 
         get("/orders") {
             val userData = call.getSession()
-            call.respond(userData.orders.associate { it.name to it.quantity })
+            val room = userData.currentRoom
+            if (room == null || !Rooms.hasRoom(room)) {
+                call.respond(HttpStatusCode.NotFound)
+                return@get
+            }
+            val orders = Rooms
+                .get(room)
+                .getUserOrders(userData)
+                .associate { it.item to it.quantity }
+            call.respond(orders)
         }
 
         put("/room") {
             val room = retrieveRoomFromRequest()
             val userData = call.getOrCreateSession()
             try {
-                userData.room = room
                 Rooms.createRoom(room, call.request.local.remoteAddress)
-                addToRoom(userData, room)
+                Rooms.get(room).addUser(userData)
+                userData.currentRoom = room
                 logger.info("User from ${call.request.local.remoteAddress} created room $room")
                 call.respond(HttpStatusCode.Created)
             } catch (e: Rooms.RoomExistsException) {
@@ -80,24 +83,14 @@ fun Application.configureRouting() {
         post("/room/join") {
             val room = retrieveRoomFromRequest()
             val userData = call.getOrCreateSession()
-            try {
-                addToRoom(userData, room)
-                logger.info("User joined room $room")
+            if (userData.currentRoom == room) {
                 call.respond(HttpStatusCode.OK)
-            } catch (e: Rooms.RoomNotFoundException) {
-                call.respond(HttpStatusCode.NotFound)
-            }
-        }
-
-        delete("/room") {
-            val userData = call.getOrCreateSession()
-            if (userData.room == null) {
-                call.respond(HttpStatusCode.NotFound)
-                return@delete
+                return@post
             }
             try {
-                Rooms.remove(userData.room!!)
-                userData.clearRoomAndOrders()
+                Rooms.get(room).addUser(userData)
+                userData.currentRoom = room
+                logger.info("User joined room $room")
                 call.respond(HttpStatusCode.OK)
             } catch (e: Rooms.RoomNotFoundException) {
                 call.respond(HttpStatusCode.NotFound)
@@ -106,13 +99,16 @@ fun Application.configureRouting() {
 
         get("/room/total") {
             val userData = call.getSession()
-            val room = userData.room
+            val room = userData.currentRoom
             if (room == null) {
                 call.respond(HttpStatusCode.NotFound)
                 return@get
             }
             try {
-                val orders = Rooms.get(room).aggregateAndGetOrders()
+                val orders = Rooms
+                    .get(room)
+                    .getTotalOrders()
+                    .associate { it.item to it.quantity }
                 call.respond(orders)
             } catch (e: Rooms.RoomNotFoundException) {
                 call.respond(HttpStatusCode.NotFound)
@@ -121,22 +117,18 @@ fun Application.configureRouting() {
     }
 }
 
-private fun placeOrder(order: String, userData: UserData) {
-    val tokens = order.split("/")
-    if (tokens.size != 2) {
-        throw IllegalArgumentException("Order should be in format '<item>x<qty>'")
-    }
-    val (item, quantity) = tokens
-    val qty = quantity.toIntOrNull() ?: throw IllegalArgumentException("Quantity should be a number")
-    userData.addOrder(Order(item, qty))
-}
-
 private suspend fun PipelineContext<Unit, ApplicationCall>.retrieveRoomFromRequest(): String {
     try {
         return normalize(call.receiveText())
     } catch (e: Exception) {
         throw BadRequestException("Invalid room name")
     }
+}
+
+private suspend inline fun <reified T> DefaultWebSocketServerSession.deserialize(frame: Frame): T {
+    return converter!!.deserialize(
+        Charset.defaultCharset(), TypeInfo(T::class, T::class.java), content = frame
+    ) as T
 }
 
 private fun ApplicationCall.getSession(): UserData {
@@ -156,11 +148,6 @@ private fun ApplicationCall.getOrCreateSession(): UserData {
         sessions.set(UserSession(newSessionId))
         return Sessions.get(newSessionId)
     }
-}
-
-private fun addToRoom(user: UserData, room: String) {
-    user.room = room
-    Rooms.get(room).users.add(user)
 }
 
 private fun normalize(s: String): String {

@@ -1,11 +1,14 @@
 package net.edotm
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Order(
-    val name: String,
+    val item: String,
     val quantity: Int,
 ) {
     override fun hashCode(): Int {
-        return name.hashCode()
+        return item.hashCode()
     }
 
     override fun equals(other: Any?): Boolean {
@@ -14,6 +17,6 @@ data class Order(
 
         other as Order
 
-        return name == other.name
+        return item == other.item
     }
 }
