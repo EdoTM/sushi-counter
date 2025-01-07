@@ -31,6 +31,7 @@ fun Application.module() {
     configureSessions(SECRET_SIGN_KEY!!)
     configureHTTP()
     configureRouting()
+    configureReverseProxyHeaders()
 
     sessionInvalidationTimer.scheduleAtFixedRate(object : TimerTask() {
         override fun run() {
